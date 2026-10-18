@@ -53,6 +53,8 @@ compares membership with GitHub.
 The catalog accepts an optional `mark` object (`path` to a repository file
 and `alt` text) and an optional `quickstart` object (`title` and a list of
 single-line `commands`). Omitted objects produce no markup.
+An optional `mark.dark` path to a repository file selects a dark-mode image
+using `<picture>`; `mark.path` remains the light-mode and fallback image.
 
 Python 3 and its standard library are sufficient; there is no build step or
 dependency installation. The membership check uses the public GitHub API.
