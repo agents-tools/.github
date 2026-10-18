@@ -76,10 +76,11 @@ skills. Native Liquid Glass rendering needs macOS with Xcode's Icon Composer
 and `rsvg-convert`.
 
 For the agents app icon, edit its entry or the artwork in `Brand/Icon/`, then
-run, with `APP_ICONS` set to that skill's `scripts/app_icons.py`:
+run from this repository, with `APP_ICONS` set to that skill's `scripts/app_icons.py`:
 
 ```sh
 python3 "$APP_ICONS" DESIGN.md --name agents --lint
+rm -rf .build/icon .build/icon-document
 python3 "$APP_ICONS" DESIGN.md --name agents --style liquid-glass --out .build/icon
 python3 "$APP_ICONS" DESIGN.md --name agents --style liquid-glass --out .build/icon-document --document-only
 ```
@@ -101,10 +102,13 @@ Framework logos for libraries are generated with that skill's
 
 ```sh
 python3 "$DESIGN_ICONS" DESIGN.md --lint
+rm -rf .build/logos
 python3 "$DESIGN_ICONS" DESIGN.md --out .build/logos --name core --png
 ```
 
-Copy `core.svg` and `core.png` to `Documentation/Assets/Logo.svg` and
-`Logo.png` in agents-tools/core, and check them from a core checkout with
-`python3 "$DESIGN_ICONS" DESIGN.md --check core=<core>/Documentation/Assets/Logo.svg`.
+The generators write only new output directories, so remove the previous
+`.build` outputs first. Copy `core.svg` and `core.png` to
+`Documentation/Assets/Logo.svg` and `Logo.png` in agents-tools/core, then
+check them from this repository with
+`python3 "$DESIGN_ICONS" DESIGN.md --check "core=<core checkout>/Documentation/Assets/Logo.svg"`.
 The organization avatar on GitHub is uploaded from `profile/assets/avatar.png`.
