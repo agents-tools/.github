@@ -28,8 +28,9 @@ then regenerate.
 
 ## Iconography
 
-The fin is translucent glass behind the opaque star, so the two overlap with
-depth and the star keeps its shape in the dark, clear and tinted appearances.
+The fin is translucent glass behind the star. The star's translucency is off,
+so the gold fin never shows through it; the two still overlap with depth, and
+the star keeps its shape in the dark, clear and tinted appearances.
 
 ```json
 {
@@ -47,7 +48,8 @@ depth and the star keeps its shape in the dark, clear and tinted appearances.
         {
           "name": "Star",
           "layers": [{"source": "Brand/Icon/star.svg", "name": "Star"}],
-          "shadow": {"kind": "neutral", "opacity": 0.5}
+          "shadow": {"kind": "neutral", "opacity": 0.5},
+          "translucency": {"enabled": false, "value": 0}
         }
       ],
       "styles": {
