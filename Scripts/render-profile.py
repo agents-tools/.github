@@ -40,10 +40,19 @@ def render(catalog):
     if "mark" in catalog:
         mark = catalog["mark"]
         mark_path = html.escape(quote(mark["path"], safe="/"))
+        if "dark" in mark:
+            dark_path = html.escape(quote(mark["dark"], safe="/"))
+            lines.extend([
+                "<picture>",
+                f'<source media="(prefers-color-scheme: dark)" '
+                f'srcset="https://raw.githubusercontent.com/{organization}/.github/master/{dark_path}">',
+            ])
         lines.append(
             f'<img src="https://raw.githubusercontent.com/{organization}/.github/master/'
             f'{mark_path}" width="128" alt="{html.escape(mark["alt"])}">'
         )
+        if "dark" in mark:
+            lines.append("</picture>")
     lines.extend([
         f'<h1>{html.escape(promise["heading"])}</h1>',
         f'<p>{html.escape(promise["secondary"])}</p>',

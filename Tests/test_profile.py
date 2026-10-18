@@ -93,6 +93,22 @@ class RenderingTests(unittest.TestCase):
                     self.assertIn("</div>\n" + (quickstart if has_quickstart else "") + "\n### Use agents\n", rendered)
                     self.assertEqual(rendered.count("<img "), int(has_mark))
                     self.assertEqual(rendered.count("```sh"), int(has_quickstart))
+                    self.assertNotIn("<picture>", rendered)
+                    self.assertNotIn("<source ", rendered)
+
+    def test_mark_with_dark_variant_uses_picture_and_light_fallback(self):
+        catalog = catalog_with_optional_sections()
+        catalog["mark"]["dark"] = "profile/mark-dark.png"
+        rendered = renderer.render(catalog)
+        self.assertIn('''<div align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/agents-tools/.github/master/profile/mark-dark.png">
+<img src="https://raw.githubusercontent.com/agents-tools/.github/master/profile/mark.png" width="128" alt="Example mark">
+</picture>
+<h1>''', rendered)
+        self.assertEqual(rendered.count("<picture>"), 1)
+        self.assertEqual(rendered.count("<source "), 1)
+        self.assertEqual(rendered.count("<img "), 1)
 
     def test_layout_and_order(self):
         catalog = {
@@ -139,19 +155,30 @@ second
 ''')
 
     def test_mark_path_encodes_reserved_filename_characters(self):
-        for path, encoded in (
-            ("profile/mark#1.png", "profile/mark%231.png"),
-            ("profile/mark?1.png", "profile/mark%3F1.png"),
-            ("profile/mark%23.png", "profile/mark%2523.png"),
-            ("profile/nested folder/mark#1?100%.png", "profile/nested%20folder/mark%231%3F100%25.png"),
-        ):
-            with self.subTest(path=path):
-                catalog = catalog_with_optional_sections()
-                catalog["mark"]["path"] = path
-                self.assertIn(
-                    f'<img src="https://raw.githubusercontent.com/agents-tools/.github/master/{encoded}"',
-                    renderer.render(catalog),
-                )
+        for has_dark in (False, True):
+            for path, encoded in (
+                ("profile/mark#1.png", "profile/mark%231.png"),
+                ("profile/mark?1.png", "profile/mark%3F1.png"),
+                ("profile/mark%23.png", "profile/mark%2523.png"),
+                ("profile/nested folder/mark#1?100%.png", "profile/nested%20folder/mark%231%3F100%25.png"),
+                ("profile/标志.png", "profile/%E6%A0%87%E5%BF%97.png"),
+            ):
+                with self.subTest(dark=has_dark, path=path):
+                    catalog = catalog_with_optional_sections()
+                    catalog["mark"]["path"] = path
+                    if has_dark:
+                        catalog["mark"]["dark"] = "dark/" + path
+                    rendered = renderer.render(catalog)
+                    self.assertIn(
+                        f'<img src="https://raw.githubusercontent.com/agents-tools/.github/master/{encoded}"',
+                        rendered,
+                    )
+                    if has_dark:
+                        self.assertIn(
+                            '<source media="(prefers-color-scheme: dark)" '
+                            f'srcset="https://raw.githubusercontent.com/agents-tools/.github/master/dark/{encoded}">',
+                            rendered,
+                        )
 
     def test_catalog_text_is_escaped_for_html_and_url_contexts(self):
         raw = '<tag> & "quote" \'single\''
@@ -165,12 +192,15 @@ second
                 return [replace_text(item) for item in value]
             return raw
 
-        catalog = replace_text(catalog_with_optional_sections())
+        catalog = catalog_with_optional_sections()
+        catalog["mark"]["dark"] = "profile/mark-dark.png"
+        catalog = replace_text(catalog)
         catalog["quickstart"]["commands"] = ["agents list"]
         rendered = renderer.render(catalog)
         self.assertNotIn(raw, rendered)
         for fragment in (
             f'/{escaped}/.github/master/{encoded_path}" width="128" alt="{escaped}"',
+            f'srcset="https://raw.githubusercontent.com/{escaped}/.github/master/{encoded_path}">',
             f"<h1>{escaped}</h1>", f"<p>{escaped}</p>",
             f'<a href="{escaped}">{escaped}</a>', f"### {escaped}",
             f'/{escaped}/{escaped}">{escaped}</a>',
@@ -295,6 +325,27 @@ class CatalogValidationTests(unittest.TestCase):
                         del catalog["quickstart"]
                     checks.validate_catalog(catalog, self.root)
 
+    def test_mark_dark_accepts_existing_repository_file(self):
+        path = "profile/dark mark#1?100%.png"
+        (self.root / path).write_bytes(b"test dark mark")
+        catalog = catalog_with_optional_sections()
+        catalog["mark"]["dark"] = path
+        checks.validate_catalog(catalog, self.root)
+
+    def test_mark_dark_must_be_nonempty_string_when_present(self):
+        for value in (None, "", "  ", [], {}, 42, False):
+            with self.subTest(value=value):
+                catalog = catalog_with_optional_sections()
+                catalog["mark"]["dark"] = value
+                with self.assertRaisesRegex(ValueError, r"mark\.dark must be a non-empty string"):
+                    checks.validate_catalog(catalog, self.root)
+
+    def test_mark_dark_requires_light_path(self):
+        catalog = catalog_with_optional_sections()
+        catalog["mark"]["dark"] = catalog["mark"].pop("path")
+        with self.assertRaisesRegex(ValueError, r"mark\.path must be a non-empty string"):
+            checks.validate_catalog(catalog, self.root)
+
     def test_optional_sections_must_be_valid_objects_when_present(self):
         for key in ("mark", "quickstart"):
             for value in (None, "", "  ", [], {}, 42):
@@ -364,12 +415,15 @@ class CatalogValidationTests(unittest.TestCase):
             checks.validate_catalog(catalog)
 
     def test_mark_requires_existing_repository_file(self):
-        for path in ("profile/missing.png", "profile", "../outside.png", str(ROOT / "README.md")):
-            with self.subTest(path=path):
-                catalog = catalog_with_optional_sections()
-                catalog["mark"]["path"] = path
-                with self.assertRaisesRegex(ValueError, "mark.path"):
-                    checks.validate_catalog(catalog, self.root)
+        for key in ("path", "dark"):
+            for path in ("profile/missing.png", "profile", "../outside.png", str(ROOT / "README.md")):
+                with self.subTest(key=key, path=path):
+                    catalog = catalog_with_optional_sections()
+                    catalog["mark"][key] = path
+                    with self.assertRaisesRegex(
+                        ValueError, rf"mark\.{key} must name an existing file inside the repository"
+                    ):
+                        checks.validate_catalog(catalog, self.root)
 
 
 class MembershipTests(unittest.TestCase):

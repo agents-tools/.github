@@ -39,10 +39,13 @@ def validate_catalog(catalog, root=ROOT):
         text_value(promise.get(key), f"promise.{key}")
     if "mark" in catalog:
         mark = object_value(catalog["mark"], "mark")
-        path = Path(text_value(mark.get("path"), "mark.path"))
         text_value(mark.get("alt"), "mark.alt")
-        if path.is_absolute() or ".." in path.parts or not (root / path).is_file():
-            raise ValueError("mark.path must name an existing file inside the repository")
+        for key in ("path", "dark"):
+            if key == "dark" and key not in mark:
+                continue
+            path = Path(text_value(mark.get(key), f"mark.{key}"))
+            if path.is_absolute() or ".." in path.parts or not (root / path).is_file():
+                raise ValueError(f"mark.{key} must name an existing file inside the repository")
     for index, link in enumerate(list_value(catalog.get("navigation"), "navigation")):
         prefix = f"navigation[{index}]"
         object_value(link, prefix)
