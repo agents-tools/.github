@@ -131,9 +131,25 @@ second
 </table>
 ''')
 
-    def test_html_contexts_escape_catalog_text(self):
+    def test_mark_path_encodes_reserved_filename_characters(self):
+        for path, encoded in (
+            ("profile/mark#1.png", "profile/mark%231.png"),
+            ("profile/mark?1.png", "profile/mark%3F1.png"),
+            ("profile/mark%23.png", "profile/mark%2523.png"),
+            ("profile/nested folder/mark#1?100%.png", "profile/nested%20folder/mark%231%3F100%25.png"),
+        ):
+            with self.subTest(path=path):
+                catalog = catalog_with_optional_sections()
+                catalog["mark"]["path"] = path
+                self.assertIn(
+                    f'<img src="https://raw.githubusercontent.com/agents-tools/.github/master/{encoded}"',
+                    renderer.render(catalog),
+                )
+
+    def test_catalog_text_is_escaped_for_html_and_url_contexts(self):
         raw = '<tag> & "quote" \'single\''
         escaped = '&lt;tag&gt; &amp; &quot;quote&quot; &#x27;single&#x27;'
+        encoded_path = '%3Ctag%3E%20%26%20%22quote%22%20%27single%27'
 
         def replace_text(value):
             if isinstance(value, dict):
@@ -147,7 +163,7 @@ second
         rendered = renderer.render(catalog)
         self.assertNotIn(raw, rendered)
         for fragment in (
-            f'/{escaped}/.github/master/{escaped}" width="128" alt="{escaped}"',
+            f'/{escaped}/.github/master/{encoded_path}" width="128" alt="{escaped}"',
             f"<h1>{escaped}</h1>", f"<p>{escaped}</p>",
             f'<a href="{escaped}">{escaped}</a>', f"### {escaped}",
             f'/{escaped}/{escaped}">{escaped}</a>',

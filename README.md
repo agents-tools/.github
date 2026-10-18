@@ -3,10 +3,14 @@
 Organization profile and shared community standards for
 [agents-tools](https://github.com/agents-tools).
 
-GitHub uses the community files and issue and pull-request templates here
-for repositories in the organization that lack their own. Repositories keep
-their own CODEOWNERS, workflows, and repository-specific development
-instructions.
+GitHub uses `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `SECURITY.md`,
+`SUPPORT.md`, and the issue and pull-request templates here as defaults for
+repositories in the organization that lack their own.
+
+`GOVERNANCE.md` is hosted here and linked from `CONTRIBUTING.md`; GitHub
+does not inherit it. The organization profile, its tooling, `AGENTS.md`, and
+`LICENSE` are local to this repository. Repositories keep their own
+CODEOWNERS, workflows, and repository-specific development instructions.
 
 ## Contents
 

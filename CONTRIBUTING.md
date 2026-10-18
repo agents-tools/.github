@@ -18,4 +18,6 @@ documentation with behavior changes.
   the pull-request title becomes the commit subject.
 
 Maintainers review changes before merging. Durable decisions belong in the
-affected repository's `Documentation/Decisions/`.
+affected repository's `Documentation/Decisions/`. See the organization's
+[governance](https://github.com/agents-tools/.github/blob/master/GOVERNANCE.md)
+for project scope and maintainer responsibilities.

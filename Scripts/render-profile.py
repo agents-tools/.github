@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import re
 import sys
+from urllib.parse import quote
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,9 +39,10 @@ def render(catalog):
     ]
     if "mark" in catalog:
         mark = catalog["mark"]
+        mark_path = html.escape(quote(mark["path"], safe="/"))
         lines.append(
             f'<img src="https://raw.githubusercontent.com/{organization}/.github/master/'
-            f'{html.escape(mark["path"])}" width="128" alt="{html.escape(mark["alt"])}">'
+            f'{mark_path}" width="128" alt="{html.escape(mark["alt"])}">'
         )
     lines.extend([
         f'<h1>{html.escape(promise["heading"])}</h1>',
