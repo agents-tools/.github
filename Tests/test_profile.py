@@ -37,8 +37,15 @@ def committed_catalog():
     return json.loads((ROOT / "profile/catalog.json").read_text(encoding="utf-8"))
 
 
-def catalog_with_quickstart():
+def base_catalog():
     catalog = committed_catalog()
+    catalog.pop("mark", None)
+    catalog.pop("quickstart", None)
+    return catalog
+
+
+def catalog_with_quickstart():
+    catalog = base_catalog()
     catalog["quickstart"] = {"title": "Get started", "commands": ["agents --help"]}
     return catalog
 
@@ -292,7 +299,7 @@ class CatalogValidationTests(unittest.TestCase):
         for key in ("mark", "quickstart"):
             for value in (None, "", "  ", [], {}, 42):
                 with self.subTest(key=key, value=value):
-                    catalog = committed_catalog()
+                    catalog = base_catalog()
                     catalog[key] = value
                     with self.assertRaisesRegex(ValueError, key):
                         checks.validate_catalog(catalog, self.root)

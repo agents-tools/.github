@@ -25,6 +25,10 @@ CODEOWNERS, workflows, and repository-specific development instructions.
 | `.github/pull_request_template.md` | Change summary, validation, and documentation prompts |
 | `profile/catalog.json` | Promise, navigation, and repository groups for the profile |
 | `profile/README.md` | Organization profile generated from the catalog |
+| `profile/assets/` | Organization avatar and profile mark |
+| `DESIGN.md` | Brand colors, the agents app icon entry and framework logo entries |
+| `Brand/Icon/` | App icon layer artwork |
+| `Brand/Exports/agents/` | Icon Composer document generated from the app icon entry |
 | `Scripts/` | Profile renderer and repository checks |
 | `Tests/` | Profile tooling tests |
 | `.github/workflows/ci.yml` | Automated tests and checks |
@@ -61,3 +65,50 @@ GITHUB_TOKEN="$(gh auth token)" python3 Scripts/check
 
 For local work without GitHub access, `python3 Scripts/check --offline`
 skips only membership verification. CI runs the full check.
+
+## Change the Icons
+
+Icons are generated from `DESIGN.md` with the
+[apple-app-icon-design](https://github.com/showxu/skills/tree/master/skills/apple-app-icon-design)
+and
+[apple-framework-icon-design](https://github.com/showxu/skills/tree/master/skills/apple-framework-icon-design)
+skills. Native Liquid Glass rendering needs macOS with Xcode's Icon Composer
+and `rsvg-convert`.
+
+For the agents app icon, edit its entry or the artwork in `Brand/Icon/`, then
+run from this repository, with `APP_ICONS` set to that skill's `scripts/app_icons.py`:
+
+```sh
+python3 "$APP_ICONS" DESIGN.md --name agents --lint
+rm -rf .build/icon .build/icon-document
+python3 "$APP_ICONS" DESIGN.md --name agents --style liquid-glass --out .build/icon
+python3 "$APP_ICONS" DESIGN.md --name agents --style liquid-glass --out .build/icon-document --document-only
+```
+
+Review `.build/icon/contact-sheet.png` and open the generated `.icon` in Icon
+Composer, then replace the committed outputs:
+
+| Generated | Committed |
+| --- | --- |
+| `.build/icon-document/` | `Brand/Exports/agents/` |
+| `.build/icon/web/avatar-1024.png` | `profile/assets/avatar.png` |
+| `.build/icon/web/icon-512.png` | `profile/assets/icon.png` |
+
+`python3 "$APP_ICONS" DESIGN.md --name agents --style liquid-glass --check Brand/Exports/agents --document-only`
+reports drift between the entry and the committed document.
+
+Framework logos for libraries are generated with that skill's
+`scripts/design_icons.py`, as `DESIGN_ICONS`:
+
+```sh
+python3 "$DESIGN_ICONS" DESIGN.md --lint
+rm -rf .build/logos
+python3 "$DESIGN_ICONS" DESIGN.md --out .build/logos --name core --png
+```
+
+The generators write only new output directories, so remove the previous
+`.build` outputs first. Copy `core.svg` and `core.png` to
+`Documentation/Assets/Logo.svg` and `Logo.png` in agents-tools/core, then
+check them from this repository with
+`python3 "$DESIGN_ICONS" DESIGN.md --check "core=<core checkout>/Documentation/Assets/Logo.svg"`.
+The organization avatar on GitHub is uploaded from `profile/assets/avatar.png`.
