@@ -9,6 +9,10 @@ Read `README.md` first.
   GitHub.
 - Repository summaries state what the repository does for a visitor, in one
   sentence, from that repository's current behavior.
+- Brand values live in `DESIGN.md`. Change an entry or `Brand/Icon/`
+  artwork, regenerate every output listed there as described in `README.md`,
+  and commit sources and outputs together. Tools use the app icon style;
+  reusable libraries use the framework icon style.
 - Keep community files and templates applicable to every agents-tools
   repository. Repository-specific build and test commands belong in each
   repository's README.
