@@ -4,6 +4,7 @@ from io import BytesIO
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import textwrap
 import unittest
 from unittest import mock
@@ -66,6 +67,73 @@ class PolicyTests(unittest.TestCase):
                             ({'before': 'not-a-sha', 'after': 'a' * 40}, 'push')):
             with self.assertRaises((ValueError, KeyError)):
                 policy.source_range(event, name)
+
+
+class GeneratedWorkflowTests(unittest.TestCase):
+    def setUp(self):
+        self.root = ROOT / '.build/test-policy-workflow'
+        self.root.mkdir(parents=True)
+        self.addCleanup(shutil.rmtree, self.root)
+        for relative in ('Scripts/check-policy.py', 'Scripts/sync-policy-workflow.py',
+                         '.github/workflows/policy.yml'):
+            destination = self.root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT / relative, destination)
+        self.workflow = self.root / '.github/workflows/policy.yml'
+        self.original = self.workflow.read_text(encoding='utf-8')
+        self.uses = next(line for line in self.original.splitlines()
+                         if line.startswith('      - uses: actions/checkout@'))
+
+    def run_generator(self, *arguments):
+        return subprocess.run(
+            [sys.executable, str(self.root / 'Scripts/sync-policy-workflow.py'), *arguments],
+            cwd=self.root, capture_output=True, text=True,
+        )
+
+    def test_dependabot_pin_only_update_passes_and_survives_regeneration(self):
+        bumped = self.original.replace(self.uses, '      - uses: actions/checkout@' + 'f' * 40 + ' # v99.0.0')
+        self.assertNotEqual(bumped, self.original)
+        self.workflow.write_text(bumped, encoding='utf-8')
+        for arguments in (('--check',), ()):
+            with self.subTest(arguments=arguments):
+                result = self.run_generator(*arguments)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(self.workflow.read_text(encoding='utf-8'), bumped)
+        self.assertEqual(generator.render(self.root), bumped)
+
+    def test_hand_edit_of_embedded_policy_fails_and_regeneration_restores_source(self):
+        edited = self.original.replace('sys.exit(main())', 'sys.exit(0)')
+        self.assertNotEqual(edited, self.original)
+        self.workflow.write_text(edited, encoding='utf-8')
+        result = self.run_generator('--check')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Regenerate policy.yml', result.stderr)
+        self.assertEqual(self.workflow.read_text(encoding='utf-8'), edited)
+        result = self.run_generator()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.workflow.read_text(encoding='utf-8'), self.original)
+
+    def test_hand_edit_of_workflow_structure_fails(self):
+        for before, after in (('persist-credentials: false', 'persist-credentials: true'),
+                              ('python3 -I -', 'python3 -')):
+            with self.subTest(before=before):
+                edited = self.original.replace(before, after)
+                self.assertNotEqual(edited, self.original)
+                self.workflow.write_text(edited, encoding='utf-8')
+                self.assertNotEqual(self.run_generator('--check').returncode, 0)
+
+    def test_checkout_requires_one_full_sha_pin_and_version_comment(self):
+        for uses in ('', self.uses + '\n' + self.uses,
+                     '      - uses: actions/checkout@v99',
+                     '      - uses: actions/checkout@' + 'f' * 40,
+                     self.uses.replace('actions/checkout@', 'other/checkout@')):
+            with self.subTest(uses=uses):
+                edited = self.original.replace(self.uses, uses)
+                self.workflow.write_text(edited, encoding='utf-8')
+                for arguments in (('--check',), ()):
+                    result = self.run_generator(*arguments)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(self.workflow.read_text(encoding='utf-8'), edited)
 
 
 class GitRangeTests(unittest.TestCase):

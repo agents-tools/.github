@@ -45,6 +45,10 @@ above authenticates only the Dependabot signoff exception.
 `python3 Scripts/sync-policy-workflow.py` after changing it and commit both the
 script and generated `policy.yml`. The workflow embeds the implementation at
 the caller's pin; it does not execute a policy script from the consumer's PR.
+Action pins and their version comments live only in the committed workflow.
+The generator reads and preserves them, so a Dependabot `uses:` pin update
+passes `--check` without regeneration or a matching generator edit. All other
+workflow content remains generated and checked against its sources.
 The embedded Python runs in isolated mode so consumer modules cannot shadow
 its imports. Text additions are checked independently of consumer Git
 attributes; binary blobs and submodule gitlinks have no source lines to scan.

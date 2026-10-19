@@ -335,9 +335,14 @@ Each member with Actions workflows configures `github-actions` updates weekly.
 Dependabot files are repository-local and are not inherited. Updates follow
 the same signed/reviewed change flow and preserve the release dependency
 contract. Pin every external action and reusable workflow to a full commit
-SHA, with a version comment for actions. If Dependabot updates a generated
-policy workflow's action pin, update its generator and regenerate in the same
-PR. Consumers advance shared workflow pins through reviewed PRs after a
+SHA, with a version comment for actions. The committed
+`.github/workflows/policy.yml` owns its action pins and version comments;
+`Scripts/sync-policy-workflow.py` reads and preserves them during regeneration.
+Dependabot pin-only updates pass the generated-workflow check without edits
+to the generator. Policy behavior remains owned by `Scripts/check-policy.py`;
+changes to it require regeneration, and hand edits to the embedded policy or
+generated workflow structure fail the check.
+Consumers advance shared workflow pins through reviewed PRs after a
 representative run; a pin lag observation alone is not a failed required
 check. See the integration guide for pin comparison and updates.
 
