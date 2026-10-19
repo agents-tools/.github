@@ -88,10 +88,10 @@ not assumed. Never add a nonexistent context to a live ruleset.
 | --- | --- | --- |
 | `agents-tools/.github` | `policy / policy`, `check` | None |
 | `agents-tools/core` | `policy / policy`, `validate / swift-package` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
-| `agents-tools/cli` | `policy / policy`, `validate / swift-package`, `smoke` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
+| `agents-tools/cli` | `policy / policy`, `validate / swift-package`, `smoke`, `presentation / presentation` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
 | `agents-tools/homebrew-tap` | `policy / policy`, `homebrew` | None |
 | `skill-cli/.github` | `policy / policy`, `check` | None |
-| `skill-cli/cli` | `policy / policy`, `validate / swift-package`, `smoke` | `vX.Y.Z` / `v*` |
+| `skill-cli/cli` | `policy / policy`, `validate / swift-package`, `smoke`, `presentation / presentation` | `vX.Y.Z` / `v*` |
 | `skill-cli/homebrew-tap` | `policy / policy`, `homebrew` | None |
 
 The 2026-10-19 audits observed `Swift Package` and
@@ -101,6 +101,11 @@ The table defines their replacement interfaces. The CLIs retain executable
 smoke validation in a member-owned `smoke` job; taps supply a member-owned
 `homebrew` job for formula validation, installation and tests. Their commands
 belong in the members. `.github` uses `check` for its Python validation.
+Both CLIs also require `presentation / presentation` to verify their committed
+Quick look SVGs against their recording and recipe using the pinned shared
+renderer. Core and the taps have no recording. This repository exercises the
+presentation workflow against a small test fixture in CI; that self-test does
+not replace the member adoption run.
 The [integration guide](Documentation/Reference/WorkflowIntegration.md)
 defines caller names and the rollout gate. Shared Swift automation still
 needs a representative member run before rollout.
@@ -239,7 +244,8 @@ adoption remains reported drift, never an implicit exemption.
       "required_checks": [
         "policy / policy",
         "validate / swift-package",
-        "smoke"
+        "smoke",
+        "presentation / presentation"
       ],
       "release_tag_patterns": [
         "refs/tags/[0-9]*.[0-9]*.[0-9]*"
@@ -285,7 +291,8 @@ adoption remains reported drift, never an implicit exemption.
       "required_checks": [
         "policy / policy",
         "validate / swift-package",
-        "smoke"
+        "smoke",
+        "presentation / presentation"
       ],
       "release_tag_patterns": [
         "refs/tags/v*"

@@ -15,6 +15,12 @@ permissions:
   contents: read
 
 jobs:
+  presentation:
+    uses: ./.github/workflows/presentation.yml
+    with:
+      record: Tests/Fixtures/Presentation/record.json
+      recipe: Tests/Fixtures/Presentation/recipe.json
+      output-directory: Tests/Fixtures/Presentation
   check:
     runs-on: ubuntu-24.04
     timeout-minutes: 10

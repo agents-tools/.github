@@ -35,8 +35,8 @@ CODEOWNERS, workflows, and repository-specific development instructions.
 | `Brand/Icon/` | App icon layer artwork |
 | `Brand/Exports/agents/` | Icon Composer document generated from the app icon entry |
 | `Scripts/` | Profile/policy generators and read-only repository/settings checks |
-| `Tests/` | Profile, policy and settings comparison tests |
-| `.github/workflows/` | Shared policy and Swift CI, plus this repository's callers |
+| `Tests/` | Profile, policy, settings and presentation tests and fixtures |
+| `.github/workflows/` | Shared policy, Swift CI and presentation checks, plus this repository's callers |
 | `.github/dependabot.yml` | Weekly Actions dependency updates |
 | `AGENTS.md` | Repository-specific agent guide |
 | `LICENSE` | Repository license |
