@@ -91,15 +91,41 @@ class GeneratedWorkflowTests(unittest.TestCase):
         )
 
     def test_dependabot_pin_only_update_passes_and_survives_regeneration(self):
-        bumped = self.original.replace(self.uses, '      - uses: actions/checkout@' + 'f' * 40 + ' # v99.0.0')
-        self.assertNotEqual(bumped, self.original)
-        self.workflow.write_text(bumped, encoding='utf-8')
+        for version in ('v99.0.0', '99.0.0', 'v99'):
+            with self.subTest(version=version):
+                bumped = self.original.replace(self.uses, '      - uses: actions/checkout@' + 'f' * 40 + ' # ' + version)
+                self.assertNotEqual(bumped, self.original)
+                self.workflow.write_text(bumped, encoding='utf-8')
+                for arguments in (('--check',), ()):
+                    result = self.run_generator(*arguments)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertEqual(self.workflow.read_text(encoding='utf-8'), bumped)
+                self.assertEqual(generator.render(self.root), bumped)
+
+    def assert_pin_rejected(self, uses):
+        edited = self.original.replace(self.uses, uses).encode('utf-8')
+        self.workflow.write_bytes(edited)
         for arguments in (('--check',), ()):
             with self.subTest(arguments=arguments):
                 result = self.run_generator(*arguments)
-                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                self.assertEqual(self.workflow.read_text(encoding='utf-8'), bumped)
-        self.assertEqual(generator.render(self.root), bumped)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.workflow.read_bytes(), edited)
+
+    def test_pin_comment_requires_ascii_version(self):
+        prefix = self.uses.split(' # ', 1)[0] + ' # '
+        for version in ('', ' ', 'latest', 'version 1.2.3', 'v1..2', '.1.2', '1.2.',
+                        'v1.2.3-beta', 'v1.2.3 extra', 'v1.2.3 ', 'v１.2.3', 'v١.2.3',
+                        'v1.2.3\t', 'v1.2.3\r'):
+            with self.subTest(version=version):
+                self.assert_pin_rejected(prefix + version)
+
+    def test_pin_line_rejects_unicode_separators_and_yaml_injection(self):
+        for separator in ('\u0085', '\u2028', '\u2029'):
+            for position in range(len(self.uses) + 1):
+                with self.subTest(separator=repr(separator), position=position):
+                    self.assert_pin_rejected(self.uses[:position] + separator + self.uses[position:])
+            with self.subTest(separator=repr(separator), injection=True):
+                self.assert_pin_rejected(self.uses + separator + '      - run: echo injected' + separator + self.uses)
 
     def test_hand_edit_of_embedded_policy_fails_and_regeneration_restores_source(self):
         edited = self.original.replace('sys.exit(main())', 'sys.exit(0)')
@@ -128,12 +154,7 @@ class GeneratedWorkflowTests(unittest.TestCase):
                      '      - uses: actions/checkout@' + 'f' * 40,
                      self.uses.replace('actions/checkout@', 'other/checkout@')):
             with self.subTest(uses=uses):
-                edited = self.original.replace(self.uses, uses)
-                self.workflow.write_text(edited, encoding='utf-8')
-                for arguments in (('--check',), ()):
-                    result = self.run_generator(*arguments)
-                    self.assertNotEqual(result.returncode, 0)
-                    self.assertEqual(self.workflow.read_text(encoding='utf-8'), edited)
+                self.assert_pin_rejected(uses)
 
 
 class GitRangeTests(unittest.TestCase):

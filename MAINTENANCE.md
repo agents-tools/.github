@@ -338,6 +338,8 @@ contract. Pin every external action and reusable workflow to a full commit
 SHA, with a version comment for actions. The committed
 `.github/workflows/policy.yml` owns its action pins and version comments;
 `Scripts/sync-policy-workflow.py` reads and preserves them during regeneration.
+Its version comments contain only dot-separated ASCII decimal numbers with an
+optional `v` prefix, such as `# v1.2.3` or `# 1.2.3`.
 Dependabot pin-only updates pass the generated-workflow check without edits
 to the generator. Policy behavior remains owned by `Scripts/check-policy.py`;
 changes to it require regeneration, and hand edits to the embedded policy or

@@ -43,11 +43,11 @@ jobs:
 
 
 def render(root=ROOT):
-    workflow = (root / ".github/workflows/policy.yml").read_text(encoding="utf-8")
-    pins = re.findall(r"^      - uses: actions/checkout@([0-9a-f]{40} # [^\r\n]+)$",
+    workflow = (root / ".github/workflows/policy.yml").read_bytes().decode("utf-8")
+    pins = re.findall(r"^      - uses: actions/checkout@([0-9a-f]{40} # v?[0-9]+(?:\.[0-9]+)*)$",
                       workflow, re.MULTILINE)
     if len(pins) != 1:
-        raise ValueError("policy.yml must contain exactly one actions/checkout full SHA pin with a version comment")
+        raise ValueError("policy.yml must contain exactly one actions/checkout full SHA pin with an ASCII numeric version comment")
     source = (root / "Scripts/check-policy.py").read_text(encoding="utf-8")
     return HEADER.replace("{checkout_pin}", pins[0]) + "".join(
         "          " + line + "\n" if line else "\n" for line in source.splitlines()
