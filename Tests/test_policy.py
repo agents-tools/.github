@@ -4,6 +4,7 @@ from io import BytesIO
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import textwrap
 import unittest
 from unittest import mock
@@ -62,10 +63,105 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(generator.render(), (ROOT / '.github/workflows/policy.yml').read_text())
 
     def test_event_ranges_reject_bad_or_unsupported_inputs(self):
-        for event, name in (({}, 'workflow_dispatch'), ({'deleted': True}, 'push'),
+        for event, name in (({}, 'schedule'), ({'deleted': True}, 'push'),
                             ({'before': 'not-a-sha', 'after': 'a' * 40}, 'push')):
             with self.assertRaises((ValueError, KeyError)):
                 policy.source_range(event, name)
+
+    def test_dispatch_requires_a_full_nonzero_github_sha(self):
+        for environment in ({}, {'GITHUB_SHA': ''}, {'GITHUB_SHA': 'not-a-sha'},
+                            {'GITHUB_SHA': 'a' * 39}, {'GITHUB_SHA': policy.ZERO}):
+            with self.subTest(environment=environment), mock.patch.dict(os.environ, environment, clear=True):
+                with self.assertRaises((ValueError, KeyError)):
+                    policy.source_range({}, 'workflow_dispatch')
+
+
+class GeneratedWorkflowTests(unittest.TestCase):
+    def setUp(self):
+        self.root = ROOT / '.build/test-policy-workflow'
+        self.root.mkdir(parents=True)
+        self.addCleanup(shutil.rmtree, self.root)
+        for relative in ('Scripts/check-policy.py', 'Scripts/sync-policy-workflow.py',
+                         '.github/workflows/policy.yml'):
+            destination = self.root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT / relative, destination)
+        self.workflow = self.root / '.github/workflows/policy.yml'
+        self.original = self.workflow.read_text(encoding='utf-8')
+        self.uses = next(line for line in self.original.splitlines()
+                         if line.startswith('      - uses: actions/checkout@'))
+
+    def run_generator(self, *arguments):
+        return subprocess.run(
+            [sys.executable, str(self.root / 'Scripts/sync-policy-workflow.py'), *arguments],
+            cwd=self.root, capture_output=True, text=True,
+        )
+
+    def test_dependabot_pin_only_update_passes_and_survives_regeneration(self):
+        for version in ('v99.0.0', '99.0.0', 'v99'):
+            with self.subTest(version=version):
+                bumped = self.original.replace(self.uses, '      - uses: actions/checkout@' + 'f' * 40 + ' # ' + version)
+                self.assertNotEqual(bumped, self.original)
+                self.workflow.write_text(bumped, encoding='utf-8')
+                for arguments in (('--check',), ()):
+                    result = self.run_generator(*arguments)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertEqual(self.workflow.read_text(encoding='utf-8'), bumped)
+                self.assertEqual(generator.render(self.root), bumped)
+
+    def assert_pin_rejected(self, uses):
+        edited = self.original.replace(self.uses, uses).encode('utf-8')
+        self.workflow.write_bytes(edited)
+        for arguments in (('--check',), ()):
+            with self.subTest(arguments=arguments):
+                result = self.run_generator(*arguments)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.workflow.read_bytes(), edited)
+
+    def test_pin_comment_requires_ascii_version(self):
+        prefix = self.uses.split(' # ', 1)[0] + ' # '
+        for version in ('', ' ', 'latest', 'version 1.2.3', 'v1..2', '.1.2', '1.2.',
+                        'v1.2.3-beta', 'v1.2.3 extra', 'v1.2.3 ', 'v１.2.3', 'v١.2.3',
+                        'v1.2.3\t', 'v1.2.3\r'):
+            with self.subTest(version=version):
+                self.assert_pin_rejected(prefix + version)
+
+    def test_pin_line_rejects_unicode_separators_and_yaml_injection(self):
+        for separator in ('\u0085', '\u2028', '\u2029'):
+            for position in range(len(self.uses) + 1):
+                with self.subTest(separator=repr(separator), position=position):
+                    self.assert_pin_rejected(self.uses[:position] + separator + self.uses[position:])
+            with self.subTest(separator=repr(separator), injection=True):
+                self.assert_pin_rejected(self.uses + separator + '      - run: echo injected' + separator + self.uses)
+
+    def test_hand_edit_of_embedded_policy_fails_and_regeneration_restores_source(self):
+        edited = self.original.replace('sys.exit(main())', 'sys.exit(0)')
+        self.assertNotEqual(edited, self.original)
+        self.workflow.write_text(edited, encoding='utf-8')
+        result = self.run_generator('--check')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Regenerate policy.yml', result.stderr)
+        self.assertEqual(self.workflow.read_text(encoding='utf-8'), edited)
+        result = self.run_generator()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.workflow.read_text(encoding='utf-8'), self.original)
+
+    def test_hand_edit_of_workflow_structure_fails(self):
+        for before, after in (('persist-credentials: false', 'persist-credentials: true'),
+                              ('python3 -I -', 'python3 -')):
+            with self.subTest(before=before):
+                edited = self.original.replace(before, after)
+                self.assertNotEqual(edited, self.original)
+                self.workflow.write_text(edited, encoding='utf-8')
+                self.assertNotEqual(self.run_generator('--check').returncode, 0)
+
+    def test_checkout_requires_one_full_sha_pin_and_version_comment(self):
+        for uses in ('', self.uses + '\n' + self.uses,
+                     '      - uses: actions/checkout@v99',
+                     '      - uses: actions/checkout@' + 'f' * 40,
+                     self.uses.replace('actions/checkout@', 'other/checkout@')):
+            with self.subTest(uses=uses):
+                self.assert_pin_rejected(uses)
 
 
 class GitRangeTests(unittest.TestCase):
@@ -108,13 +204,63 @@ class GitRangeTests(unittest.TestCase):
         self.git('config', 'user.email', '49699333+dependabot[bot]@users.noreply.github.com')
         return self.commit('chore(deps): bump dependency from 1.0 to 1.1\n\n' + policy.DEPENDABOT_SIGNOFF)
 
+    def dispatch(self, head):
+        event_file = self.root / 'event.json'
+        event_file.write_text(json.dumps({'repository': {'full_name': 'owner/member'},
+                                          'ref': 'main', 'inputs': {}}))
+        self.addCleanup(event_file.unlink, missing_ok=True)
+        command = textwrap.dedent(generator.render().split('        run: |\n', 1)[1])
+        return subprocess.run(
+            ['bash', '-eo', 'pipefail', '-c', command], cwd=self.root,
+            env={**os.environ, 'GITHUB_EVENT_PATH': str(event_file),
+                 'GITHUB_EVENT_NAME': 'workflow_dispatch', 'GITHUB_SHA': head},
+            capture_output=True, text=True,
+        )
+
+    def test_dispatch_validates_selected_head_without_rescanning_history(self):
+        (self.root / 'file').write_text('valid change\n')
+        head = self.commit('fix: update content')
+        (self.root / 'file').write_text('later change\n')
+        self.commit('Invalid later subject')
+        result = self.dispatch(head)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('PASS source policy', result.stdout)
+
+    def test_dispatch_rejects_invalid_subject_on_root_commit(self):
+        result = self.dispatch(self.base)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn(self.base + ': expected a Conventional Commit subject', result.stdout)
+        self.assertNotIn('PR title', result.stdout)
+
+    def test_dispatch_rejects_forbidden_trailers(self):
+        (self.root / 'file').write_text('updated content\n')
+        head = self.commit('fix: update content\n\nGenerated-by: tool')
+        result = self.dispatch(head)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn(head + ': forbidden attribution trailer', result.stdout)
+        self.assertNotIn('PR title', result.stdout)
+
+    def test_default_branch_push_checks_entire_range_without_pr_title(self):
+        (self.root / 'file').write_text('first change\n')
+        first = self.commit('Invalid subject')
+        (self.root / 'file').write_text('second change  \n')
+        head = self.commit('fix: update content\n\nGenerated-by: tool')
+        event = {'repository': {'full_name': 'owner/member', 'default_branch': 'main'},
+                 'ref': 'refs/heads/main', 'before': self.base, 'after': head}
+        findings = policy.check(event, 'push')
+        self.assertTrue(any(first + ': expected a Conventional Commit subject' in line for line in findings))
+        self.assertIn(head + ': forbidden attribution trailer', findings)
+        self.assertTrue(any('whitespace error' in line for line in findings))
+        self.assertFalse(any('PR title' in line for line in findings))
+
     @mock.patch.dict(os.environ, {'GH_TOKEN': 'test-token'})
-    def test_authenticated_dependabot_update_passes_on_pr_and_push(self):
+    def test_authenticated_dependabot_update_passes_on_pr_push_and_dispatch(self):
         head = self.dependency_update()
         events = ((self.event(head), 'pull_request'),
-                  ({'repository': {'full_name': 'owner/member'}, 'before': self.base, 'after': head}, 'push'))
+                  ({'repository': {'full_name': 'owner/member'}, 'before': self.base, 'after': head}, 'push'),
+                  ({'repository': {'full_name': 'owner/member'}, 'ref': 'main'}, 'workflow_dispatch'))
         for event, name in events:
-            with self.subTest(event=name), mock.patch.object(
+            with self.subTest(event=name), mock.patch.dict(os.environ, {'GITHUB_SHA': head}), mock.patch.object(
                 policy, 'urlopen', return_value=github_response(dependabot_metadata(head))
             ) as get:
                 self.assertEqual(policy.check(event, name), [])

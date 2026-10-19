@@ -10,7 +10,7 @@ not inherited from community defaults.
 
 | Workflow | Inputs | Job ID / result with the documented caller |
 | --- | --- | --- |
-| `policy.yml` | None; reads the caller's `pull_request` or non-deletion `push` event | `policy` / `policy / policy` |
+| `policy.yml` | None; handles `pull_request`, non-deletion `push` and `workflow_dispatch` events | `policy` / `policy / policy` |
 | `swift-package-ci.yml` | Required string `runner`; optional `package-directory` (default `.`), `format-configuration` (default `.swift-format`) | `swift-package` / `validate / swift-package` |
 | `presentation.yml` | Optional strings `record`, `recipe`, `output-directory` (defaults below) | `presentation` / `presentation / presentation` |
 
@@ -20,7 +20,7 @@ There is no skipped-success aggregate. Explicit permissions exist at workflow
 and job scope; checkout credentials are not persisted. All external actions
 are pinned to full SHAs with version comments.
 
-Policy validates the PR title and every new commit subject using the types in
+Policy validates PR titles on `pull_request` events and commit subjects using the types in
 [MAINTENANCE](../../MAINTENANCE.md#change-flow). It checks new commit messages
 and added lines for the declared forbidden attribution trailers, and added
 lines for whitespace errors and conflict markers. The exact commit-message
@@ -34,21 +34,35 @@ additional permissions, and fails closed if authentication is unavailable.
 All other attribution trailers remain forbidden, including other signoffs
 on a Dependabot commit. PR titles and added lines have no exception; squash
 merges still use the PR title and an empty body. Product names remain valid
-content. PR diffs use the merge base; push diffs use `before`/`after`. A first
+content. PR diffs use the merge base; pushes, including to the default branch,
+validate every commit in `before..after` and added lines in that diff. A first
 push of a topic branch compares with the fetched default branch, keeping the
 published legacy exceptions outside the new-work range. An empty repository
 bootstrap is outside this workflow's contract. General signing enforcement
 belongs to the branch ruleset and maintainer verification; the signature check
 above authenticates only the Dependabot signoff exception.
 
+Manual dispatch, directly or through a caller, validates the subject and
+trailers of the selected ref's head commit from `GITHUB_SHA`, including the
+authenticated Dependabot exception. It requires no PR title and does not
+rescan ancestors or added lines because dispatch supplies no new-change range.
+Both the shared policy workflow and its caller declare `workflow_dispatch`.
+GitHub enables manual runs once the workflow exists on the default branch;
+the dispatched ref chooses the commit to validate. See the
+[dispatch event contract](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch).
+
 `Scripts/check-policy.py` owns policy behavior. Run
 `python3 Scripts/sync-policy-workflow.py` after changing it and commit both the
 script and generated `policy.yml`. The workflow embeds the implementation at
 the caller's pin; it does not execute a policy script from the consumer's PR.
+Action pins and their version comments live only in the committed workflow.
+The generator reads and preserves them, so a Dependabot `uses:` pin update
+passes `--check` without regeneration or a matching generator edit. All other
+workflow content remains generated and checked against its sources.
 The embedded Python runs in isolated mode so consumer modules cannot shadow
 its imports. Text additions are checked independently of consumer Git
 attributes; binary blobs and submodule gitlinks have no source lines to scan.
-Event strings are read as JSON, never interpolated into shell code. It runs on
+Event strings are read as JSON, never interpolated into shell code. PR runs use
 `pull_request`, not privileged `pull_request_target`.
 
 Swift CI checks out the caller's event commit (the test merge commit on PRs),
@@ -81,6 +95,7 @@ on:
     branches: [master]
   pull_request:
     types: [opened, synchronize, reopened, edited]
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
