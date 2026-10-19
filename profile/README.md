@@ -6,6 +6,14 @@
 
 <p align="center"><a href="https://agents-tools.github.io/">Documentation</a> · <a href="https://github.com/agents-tools/.github/blob/master/CONTRIBUTING.md">Contributing</a> · <a href="https://github.com/agents-tools/.github/blob/master/SECURITY.md">Security</a> · <a href="https://github.com/agents-tools/.github/blob/master/SUPPORT.md">Support</a></p>
 
+<h2>Get started</h2>
+
+```sh
+brew install agents-tools/tap/agents
+agents skills add owner/repo name
+agents skills list
+```
+
 <h2>Use agents</h2>
 
 <table>
