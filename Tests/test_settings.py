@@ -144,7 +144,7 @@ class SettingsTests(unittest.TestCase):
             return [[{'full_name': name, 'private': False, 'archived': False}] for name in names + [organization + '/new']]
         with mock.patch.object(settings, 'check_repository', return_value=[]) as check:
             findings = settings.check_online(self.declaration, get)
-        self.assertEqual(check.call_count, 7)
+        self.assertEqual(check.call_count, len(self.declaration['repositories']))
         self.assertEqual(len(findings), 2)
         self.assertTrue(all('public_members' in line and '/new' in line for line in findings))
 

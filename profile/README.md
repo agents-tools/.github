@@ -24,3 +24,9 @@
 <table>
 <tr><td><strong><a href="https://github.com/agents-tools/homebrew-tap">homebrew-tap</a></strong><br>Homebrew tap for <code>agents</code>.</td></tr>
 </table>
+
+### Learn
+
+<table>
+<tr><td><strong><a href="https://github.com/agents-tools/agents-tools.github.io">agents-tools.github.io</a></strong><br>Source for the agents website.</td></tr>
+</table>
