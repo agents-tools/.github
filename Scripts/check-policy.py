@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check event commit messages, PR titles and added source lines."""
 
+import base64
 import json
 import os
 from pathlib import Path
@@ -25,6 +26,36 @@ def git(*arguments):
     return subprocess.check_output(
         ["git", *arguments], text=True, errors="replace", stdin=subprocess.DEVNULL
     )
+
+
+def git_succeeds(*arguments):
+    return subprocess.run(
+        ["git", *arguments], stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    ).returncode == 0
+
+
+def push_base(event):
+    default = event["repository"]["default_branch"]
+    if event["ref"] != "refs/heads/" + default:
+        return git("rev-parse", "--verify", "refs/remotes/origin/" + default + "^{commit}").strip()
+
+    before = event["before"]
+    if not re.fullmatch(r"[0-9a-f]{40}", before):
+        raise ValueError("policy requires a full before commit SHA")
+    if before != ZERO:
+        if not git_succeeds("cat-file", "-e", before + "^{commit}"):
+            options = []
+            if token := os.environ.get("GH_TOKEN"):
+                # Checkout removes its credentials; scope authentication to
+                # this fetch without persisting the token in Git config.
+                credential = base64.b64encode(("x-access-token:" + token).encode()).decode("ascii")
+                options = ["-c", "http.https://github.com/.extraheader=AUTHORIZATION: basic " + credential]
+            git_succeeds(*options, "fetch", "--no-tags", "origin", before)
+        if git_succeeds("cat-file", "-e", before + "^{commit}"):
+            # before..after excludes shared history even after a force push.
+            return before
+    return None
 
 
 def message_findings(label, message, *, dependabot=False):
@@ -104,24 +135,22 @@ def source_range(event, event_name):
     elif event_name == "workflow_dispatch":
         base, head = None, os.environ["GITHUB_SHA"]
     elif event_name == "push" and not event.get("deleted"):
-        base, head = event["before"], event["after"]
+        head = event["after"]
         if not re.fullmatch(r"[0-9a-f]{40}", head) or head == ZERO:
             raise ValueError("policy requires a full, nonzero head commit SHA")
-        if base == ZERO:
-            # New topic branches compare with the fetched default branch, so
-            # published legacy ancestors are outside the new-work policy.
-            default = event["repository"]["default_branch"]
-            default_head = git("rev-parse", "refs/remotes/origin/" + default).strip()
-            base = git("merge-base", default_head, head).strip()
+        base = push_base(event)
     else:
         raise ValueError("policy requires a pull_request, workflow_dispatch or non-deletion push")
-    commits = (head,) if event_name == "workflow_dispatch" else (base, head)
+    commits = (head,) if event_name != "pull_request" and base is None else (base, head)
     if any(not re.fullmatch(r"[0-9a-f]{40}", value) or value == ZERO for value in commits):
         raise ValueError("policy requires full, nonzero source commit SHAs")
     return base, head
 
 
 def check(event, event_name):
+    if event_name == "push" and event.get("deleted"):
+        print("::notice::Policy skipped branch deletion push")
+        return []
     base, head = source_range(event, event_name)
     findings = []
     if event_name == "pull_request":
@@ -130,9 +159,23 @@ def check(event, event_name):
             findings.append("PR title: expected a single line")
         findings.extend(message_findings("PR title", title))
         comparison = git("merge-base", base, head).strip()
+    elif event_name == "push" and base is None:
+        parents = git("rev-list", "--parents", "-n", "1", head).split()
+        comparison = parents[1] if len(parents) > 1 else git("mktree").strip()
+    elif event_name == "push" and event["ref"] != "refs/heads/" + event["repository"]["default_branch"]:
+        try:
+            comparison = git("merge-base", base, head).strip()
+        except subprocess.CalledProcessError:
+            # An orphan branch has no shared ancestor with the default branch.
+            comparison = base
     else:
         comparison = base
     commits = [head] if base is None else git("rev-list", "--reverse", base + ".." + head).splitlines()
+    if event_name == "push":
+        if base is None:
+            print(f"::notice::Policy push: validating only {head}; previous default-branch tip unavailable or absent")
+        else:
+            print(f"::notice::Policy push: validating {len(commits)} commits in {base}..{head}")
     for commit in commits:
         # Preserve carriage returns: newline normalization would broaden the
         # exact signoff exception to differently spelled trailer lines.

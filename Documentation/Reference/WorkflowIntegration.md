@@ -10,7 +10,7 @@ not inherited from community defaults.
 
 | Workflow | Inputs | Job ID / result with the documented caller |
 | --- | --- | --- |
-| `policy.yml` | None; handles `pull_request`, non-deletion `push` and `workflow_dispatch` events | `policy` / `policy / policy` |
+| `policy.yml` | None; handles `pull_request`, `push` and `workflow_dispatch` events | `policy` / `policy / policy` |
 | `swift-package-ci.yml` | Required string `runner`; optional `package-directory` (default `.`), `format-configuration` (default `.swift-format`) | `swift-package` / `validate / swift-package` |
 | `presentation.yml` | Optional strings `record`, `recipe`, `output-directory` (defaults below) | `presentation` / `presentation / presentation` |
 
@@ -34,13 +34,21 @@ additional permissions, and fails closed if authentication is unavailable.
 All other attribution trailers remain forbidden, including other signoffs
 on a Dependabot commit. PR titles and added lines have no exception; squash
 merges still use the PR title and an empty body. Product names remain valid
-content. PR diffs use the merge base; pushes, including to the default branch,
-validate every commit in `before..after` and added lines in that diff. A first
-push of a topic branch compares with the fetched default branch, keeping the
-published legacy exceptions outside the new-work range. An empty repository
-bootstrap is outside this workflow's contract. General signing enforcement
-belongs to the branch ruleset and maintainer verification; the signature check
-above authenticates only the Dependabot signoff exception.
+content. PR diffs use the merge base. Checkout fetches all branch history.
+Every topic-branch push validates commits in `origin/<default>..after`,
+independently of `before`, including force pushes and new branches. Added lines
+are compared with the merge base, or the default tip when histories are unrelated.
+Default-branch pushes validate `before..after` and added lines in that diff
+when the previous tip is available. This excludes commits reachable from the
+previous tip even after a force push. If the previous tip is missing, policy
+attempts to fetch it by SHA using the workflow token without persisting credentials.
+If it cannot be fetched or `before` is zero, policy validates only `after` and
+its added lines against its first parent (the empty tree for a root commit).
+Push notices report the selected range and commit count, or the single-commit
+fallback. Branch deletion pushes skip checkout and validation with a notice.
+General signing enforcement belongs to the branch ruleset and maintainer
+verification; the signature check above authenticates only the Dependabot
+signoff exception.
 
 Manual dispatch, directly or through a caller, validates the subject and
 trailers of the selected ref's head commit from `GITHUB_SHA`, including the

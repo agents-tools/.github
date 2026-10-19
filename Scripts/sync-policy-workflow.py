@@ -30,8 +30,10 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@{checkout_pin}
+        if: ${{ github.event_name != 'push' || !github.event.deleted }}
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # Include every branch's history for default-branch comparisons.
           fetch-depth: 0
           persist-credentials: false
       - name: Check titles, commit messages and added lines
