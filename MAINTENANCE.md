@@ -253,7 +253,7 @@ adoption remains reported drift, never an implicit exemption.
     },
     "agents-tools/homebrew-tap": {
       "default_branch": "master",
-      "description": "Homebrew tap for agents",
+      "description": "Install agents with Homebrew.",
       "topics": [
         "homebrew",
         "homebrew-tap"
@@ -300,7 +300,7 @@ adoption remains reported drift, never an implicit exemption.
     },
     "skill-cli/homebrew-tap": {
       "default_branch": "master",
-      "description": "Homebrew tap for skill-cli",
+      "description": "Install skill with Homebrew.",
       "topics": [
         "homebrew",
         "homebrew-tap"
