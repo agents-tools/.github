@@ -59,7 +59,16 @@ reader's monospace font.
 | `card-ink` | `#16143D` | Owner label and title |
 | `card-muted` | `#4F4C7A` | About sentence |
 
-Tools show the agents app icon; libraries show their framework logo.
+| Field | Source |
+| --- | --- |
+| `owner` | The organization login, `agents-tools` |
+| `title` | The repository's README title: `agents` for cli, `core` for core, `homebrew-tap` for the tap |
+| `about` | The repository's About sentence, which is also its README tagline, complete and unchanged |
+| `icon` | Tools: the agents app icon, `profile/assets/icon.png` (512 px PNG). Libraries: their framework logo SVG, for core `Documentation/Assets/Logo.svg` in agents-tools/core |
+
+The app icon exists only as a rendered Liquid Glass PNG, so cards need a
+renderer that accepts raster icons; `github-repo-steward`'s `render_social.py`
+gains that support in showxu/skills (raster icons are embedded byte for byte).
 
 ### Terminal
 
@@ -71,7 +80,7 @@ Tools show the agents app icon; libraries show their framework logo.
 | `prompt` | `#3B35D1` | `#8F8AFF` |
 | `command` | `#16143D` | `#F1F0FF` |
 | `output` | `#3F3D5C` | `#C8C7E6` |
-| `dim` | `#6F6D8B` | `#7C7AA3` |
+| `dim` | `#67657F` | `#8785AE` |
 
 The prompt carries the icon's indigo; the dark surface is the shell's night
 blue. READMEs select the light or dark recording with `<picture>` and
