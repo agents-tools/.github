@@ -69,6 +69,26 @@ reader's monospace font.
 Cards are rendered by `github-repo-steward`'s `render_social.py`, which embeds
 raster icons byte for byte. Sources and exports live in `Brand/Social/`.
 
+### Website
+
+The website maps these roles to existing tokens; it defines no colors of its own.
+
+| Role | Light | Dark |
+| --- | --- | --- |
+| `page` | `#F5F4FF` (`card-background`) | `#0E0F24` (terminal `surface`) |
+| `surface` | `#FBFBFE` (terminal `surface`) | `#16183A` (terminal `bar`) |
+| `border` | `#DCDBEA` (terminal `border`) | `#2A2C55` (terminal `border`) |
+| `text` | `#16143D` (`card-ink`) | `#F1F0FF` (terminal `command`) |
+| `muted` | `#4F4C7A` (`card-muted`) | `#C8C7E6` (terminal `output`) |
+| `accent` | `#3B35D1` (terminal `prompt`) | `#8F8AFF` (terminal `prompt`) |
+
+| Use | Font |
+| --- | --- |
+| Headings | `font-card-title` |
+| Body | `font-card-body` |
+| Labels and navigation | `font-card-owner` |
+| Code and terminal | `font-terminal` |
+
 ### Terminal
 
 | Role | Light | Dark |
