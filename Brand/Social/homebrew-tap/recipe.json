@@ -1,6 +1,6 @@
 {
   "design_source": "../../../DESIGN.md",
-  "design_sha256": "fbd533f948ff2d8b42ea3dc4ebfcce7785e9d182e1607d2dd8e819eea5467cba",
+  "design_sha256": "1e81e6410dbb0a39395f7458de203c796bafeecfbf8dc54e3c8076e1ef727d2b",
   "owner": "agents-tools",
   "title": "homebrew-tap",
   "about": "Install agents with Homebrew.",

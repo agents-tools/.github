@@ -66,7 +66,7 @@ reader's monospace font.
 | `about` | The repository's About sentence, which is also its README tagline, complete and unchanged |
 | `icon` | Tools: the agents app icon, `profile/assets/icon.png` (512 px PNG). Libraries: their framework logo SVG, for core `Documentation/Assets/Logo.svg` in agents-tools/core |
 
-Cards are rendered by `github-repo-steward`'s `render_social.py`, which embeds
+Cards are rendered by `github-readme-design`'s `render_social.py`, which embeds
 raster icons byte for byte. Sources and exports live in `Brand/Social/`.
 
 ### Website
