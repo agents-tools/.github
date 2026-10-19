@@ -72,7 +72,7 @@ and any social card; catalog summaries may give additional context.
   `refs/tags/[0-9]*.[0-9]*.[0-9]*` covers unprefixed `X.Y.Z` tags. It is a
   GitHub fnmatch protection glob, not a SemVer validator; the member's release
   checklist validates the exact version. `skill-cli/cli` uses `refs/tags/v*`.
-  Taps and standards repositories have no release tags of their own.
+  Taps, standards repositories and the website have no release tags of their own.
 
 ### Activation and required checks
 
@@ -90,6 +90,7 @@ not assumed. Never add a nonexistent context to a live ruleset.
 | `agents-tools/core` | `policy / policy`, `validate / swift-package` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
 | `agents-tools/cli` | `policy / policy`, `validate / swift-package`, `smoke`, `presentation / presentation` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
 | `agents-tools/homebrew-tap` | `policy / policy`, `homebrew` | None |
+| `agents-tools/agents-tools.github.io` | `policy / policy`, `site` | None |
 | `skill-cli/.github` | `policy / policy`, `check` | None |
 | `skill-cli/cli` | `policy / policy`, `validate / swift-package`, `smoke`, `presentation / presentation` | `vX.Y.Z` / `v*` |
 | `skill-cli/homebrew-tap` | `policy / policy`, `homebrew` | None |
@@ -261,6 +262,16 @@ adoption remains reported drift, never an implicit exemption.
       "required_checks": [
         "policy / policy",
         "homebrew"
+      ],
+      "release_tag_patterns": []
+    },
+    "agents-tools/agents-tools.github.io": {
+      "default_branch": "master",
+      "description": "Source for the agents website.",
+      "topics": [],
+      "required_checks": [
+        "policy / policy",
+        "site"
       ],
       "release_tag_patterns": []
     },

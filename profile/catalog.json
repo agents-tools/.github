@@ -58,6 +58,15 @@
           "summary": "Homebrew tap for `agents`."
         }
       ]
+    },
+    {
+      "title": "Learn",
+      "repositories": [
+        {
+          "name": "agents-tools.github.io",
+          "summary": "Source for the agents website."
+        }
+      ]
     }
   ]
 }
