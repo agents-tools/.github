@@ -1,7 +1,9 @@
 # agents-tools/.github
 
-Organization profile and shared community standards for
-[agents-tools](https://github.com/agents-tools).
+Organization profile and shared engineering and community standards for
+[agents-tools](https://github.com/agents-tools). This repository owns the
+reusable workflows for the agents family; `skill-cli` adopts the standard by
+reference with its own organization values.
 
 GitHub uses `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `SECURITY.md`,
 `SUPPORT.md`, and the issue and pull-request templates here as defaults for
@@ -21,6 +23,9 @@ CODEOWNERS, workflows, and repository-specific development instructions.
 | `SECURITY.md` | Private vulnerability reporting and security scope |
 | `SUPPORT.md` | Where to ask for help and what to include |
 | `GOVERNANCE.md` | Maintainer responsibilities, scope, and decision records |
+| `MAINTENANCE.md` | Change flow, signing, declared settings, review and legacy exceptions |
+| `VERSIONING.md` | Version sources, immutable tags, changelogs and release order |
+| `Documentation/Reference/WorkflowIntegration.md` | Reusable workflow interfaces, caller pins and required contexts |
 | `.github/ISSUE_TEMPLATE/` | Bug and feature templates, plus security reporting guidance |
 | `.github/pull_request_template.md` | Change summary, validation, and documentation prompts |
 | `profile/catalog.json` | Promise, navigation, and repository groups for the profile |
@@ -29,9 +34,10 @@ CODEOWNERS, workflows, and repository-specific development instructions.
 | `DESIGN.md` | Brand colors, the agents app icon entry and framework logo entries |
 | `Brand/Icon/` | App icon layer artwork |
 | `Brand/Exports/agents/` | Icon Composer document generated from the app icon entry |
-| `Scripts/` | Profile renderer and repository checks |
-| `Tests/` | Profile tooling tests |
-| `.github/workflows/ci.yml` | Automated tests and checks |
+| `Scripts/` | Profile/policy generators and read-only repository/settings checks |
+| `Tests/` | Profile, policy and settings comparison tests |
+| `.github/workflows/` | Shared policy and Swift CI, plus this repository's callers |
+| `.github/dependabot.yml` | Weekly Actions dependency updates |
 | `AGENTS.md` | Repository-specific agent guide |
 | `LICENSE` | Repository license |
 
@@ -56,17 +62,35 @@ single-line `commands`). Omitted objects produce no markup.
 An optional `mark.dark` path to a repository file selects a dark-mode image
 using `<picture>`; `mark.path` remains the light-mode and fallback image.
 
-Python 3 and its standard library are sufficient; there is no build step or
-dependency installation. The membership check uses the public GitHub API.
-Set `GITHUB_TOKEN` for authenticated read access, or use an authenticated
-GitHub CLI session without printing the token:
+Python 3 and its standard library are sufficient for local checks. The public
+membership check uses the GitHub API with optional `GITHUB_TOKEN` read access.
+The full online check also needs an authenticated `gh` session that can read
+the declared repositories' settings in both organizations:
 
 ```sh
-GITHUB_TOKEN="$(gh auth token)" python3 Scripts/check
+python3 Scripts/check
 ```
 
 For local work without GitHub access, `python3 Scripts/check --offline`
-skips only membership verification. CI runs the full check.
+validates local files and skips all network reads. CI runs
+`python3 Scripts/check --public` with its read-only token: local checks and
+public membership, without administrative settings. Run the default check
+before handoff and report settings drift and unavailable observations; it
+never mutates GitHub. See [Maintenance](MAINTENANCE.md#read-only-verification).
+
+## Change the Standard
+
+Follow [Maintenance](MAINTENANCE.md) for change flow and declarations,
+[Versioning](VERSIONING.md) for release policy, and
+[Workflow integration](Documentation/Reference/WorkflowIntegration.md) for
+shared workflow interfaces and adoption. After editing `Scripts/check-policy.py`
+or its workflow generator, run `python3 Scripts/sync-policy-workflow.py` and
+commit the generated workflow too.
+
+Before handoff, run the offline and online checks, unit tests, `actionlint`
+(or parse every workflow as YAML when unavailable), and `git diff --check
+origin/master`. Member settings activation and workflow pin rollouts require
+the real consumer evidence described in the integration guide.
 
 ## Change the Icons
 

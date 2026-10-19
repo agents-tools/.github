@@ -8,6 +8,11 @@ Read the affected repository's README for its build and test commands and
 follow its repository-specific development instructions. Update tests and
 documentation with behavior changes.
 
+Follow the shared [maintenance change flow](https://github.com/agents-tools/.github/blob/master/MAINTENANCE.md#change-flow)
+for signing, validation, review and merging, and the
+[versioning standard](https://github.com/agents-tools/.github/blob/master/VERSIONING.md)
+when preparing a release.
+
 ## Pull Requests
 
 - Keep each pull request to one logical change.

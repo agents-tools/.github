@@ -2,6 +2,16 @@
 
 Read `README.md` first.
 
+- `MAINTENANCE.md` owns change flow, settings, required contexts, review and
+  legacy exceptions. Its JSON declaration is the checker's expected state;
+  update it and its table together when settings or check names change.
+- `VERSIONING.md` owns family version policy and release order.
+- `Documentation/Reference/WorkflowIntegration.md` owns reusable workflow
+  interfaces and the real-run gate before activating rulesets or rolling pins.
+- Edit policy behavior in `Scripts/check-policy.py`, run
+  `python3 Scripts/sync-policy-workflow.py`, and commit the generated workflow.
+  Shared workflows must execute their pinned policy, not a consumer PR's script.
+
 - `profile/README.md` is generated. Change `profile/catalog.json`, run
   `python3 Scripts/render-profile.py`, and commit both.
 - Keep catalog membership equal to the organization's public, non-archived
@@ -16,5 +26,8 @@ Read `README.md` first.
 - Keep community files and templates applicable to every agents-tools
   repository. Repository-specific build and test commands belong in each
   repository's README.
-- Run `python3 Scripts/check` and `python3 -m unittest discover -s Tests`
-  before handing off a change.
+- Run `python3 Scripts/check --offline`, `python3 Scripts/check`,
+  `python3 -m unittest discover -s Tests`, `actionlint` (or parse every workflow
+  as YAML if unavailable), and `git diff --check origin/master` before handoff.
+  Report live drift and unknowns; checks never change settings. CI's `--public`
+  mode does not establish administrative settings conformance.

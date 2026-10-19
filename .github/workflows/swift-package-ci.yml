@@ -1,0 +1,53 @@
+name: Shared Swift package CI
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: GitHub-hosted macOS runner with the package's supported Swift toolchain
+        type: string
+        required: true
+      package-directory:
+        description: Package directory relative to the caller checkout
+        type: string
+        default: '.'
+      format-configuration:
+        description: swift-format configuration relative to the package directory
+        type: string
+        default: .swift-format
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shared-swift-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  swift-package:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.package-directory }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - name: Record toolchain
+        run: swift --version
+      - name: Strict formatting
+        env:
+          FORMAT_CONFIGURATION: ${{ inputs.format-configuration }}
+        run: xcrun swift-format lint --strict --configuration "$FORMAT_CONFIGURATION" --recursive Package.swift Sources Tests
+      - name: Debug build
+        run: swift build --configuration debug
+      - name: Tests with agent configuration overrides unset
+        run: env -u CODEX_HOME -u CLAUDE_CONFIG_DIR -u XDG_CONFIG_HOME -u XDG_STATE_HOME -u XDG_CACHE_HOME swift test
+      - name: Release build
+        run: swift build --configuration release
+      - name: Diff check
+        run: git diff --check
