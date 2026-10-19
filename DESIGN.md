@@ -26,6 +26,66 @@ then regenerate.
 | `spirit` | `#B57AFF`, `#FF7AD6` | Haze inside the shell |
 | `core` | Face `#6A63F0` to `#3B35D1`; bands `oklch(0.52 0.2 280)`, `oklch(0.6 0.19 302)`, `oklch(0.68 0.17 340)` | Core framework logo: an indigo face over violet and pink bands |
 
+## Presentation
+
+These values drive README Quick look recordings and social cards for every
+agents-tools repository. Renderer recipes copy them and record the digest of
+this file; change a value here first, then regenerate.
+
+### Typography
+
+| Token | Value |
+| --- | --- |
+| `font-card-title` | Google Sans Code Proportional Bold, `Brand/Fonts/GoogleSansCodeProportional-Bold.ttf` |
+| `font-card-body` | Google Sans Code Proportional Regular, `Brand/Fonts/GoogleSansCodeProportional-Regular.ttf` |
+| `font-card-owner` | Google Sans Code Proportional Medium, `Brand/Fonts/GoogleSansCodeProportional-Medium.ttf` |
+| `font-terminal` | `ui-monospace, SFMono-Regular, Menlo, Consolas, monospace` |
+
+The card faces are static instances (`MONO=0`) of Google Sans Code v7.001
+(`GoogleSansCode[MONO,wght].ttf` from the
+[googlefonts/googlesans-code](https://github.com/googlefonts/googlesans-code)
+release archive, SHA-256
+`eebba2a438882396e8530cad6d6cb80182b0afb6e9e0ad07b7340359a53ba2e9`), licensed
+under the SIL Open Font License 1.1 (`Brand/Fonts/OFL.txt`).
+`python3 Brand/Fonts/instantiate.py` reproduces them byte for byte. Card
+lettering is converted to outlines; terminal recordings keep live text in the
+reader's monospace font.
+
+### Social card
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `card-background` | `#F5F4FF` | Canvas |
+| `card-ink` | `#16143D` | Owner label and title |
+| `card-muted` | `#4F4C7A` | About sentence |
+
+| Field | Source |
+| --- | --- |
+| `owner` | The organization login, `agents-tools` |
+| `title` | The repository's README title: `agents` for cli, `core` for core, `homebrew-tap` for the tap |
+| `about` | The repository's About sentence, which is also its README tagline, complete and unchanged |
+| `icon` | Tools: the agents app icon, `profile/assets/icon.png` (512 px PNG). Libraries: their framework logo SVG, for core `Documentation/Assets/Logo.svg` in agents-tools/core |
+
+The app icon exists only as a rendered Liquid Glass PNG, so cards need a
+renderer that accepts raster icons; `github-repo-steward`'s `render_social.py`
+gains that support in showxu/skills (raster icons are embedded byte for byte).
+
+### Terminal
+
+| Role | Light | Dark |
+| --- | --- | --- |
+| `surface` | `#FBFBFE` | `#0E0F24` |
+| `bar` | `#F0EFF8` | `#16183A` |
+| `border` | `#DCDBEA` | `#2A2C55` |
+| `prompt` | `#3B35D1` | `#8F8AFF` |
+| `command` | `#16143D` | `#F1F0FF` |
+| `output` | `#3F3D5C` | `#C8C7E6` |
+| `dim` | `#67657F` | `#8785AE` |
+
+The prompt carries the icon's indigo; the dark surface is the shell's night
+blue. READMEs select the light or dark recording with `<picture>` and
+`prefers-color-scheme`.
+
 ## Iconography
 
 ```json
@@ -203,3 +263,4 @@ then regenerate.
 | Organization avatar, 1024 px | `profile/assets/avatar.png` |
 | Profile mark, 512 px | `profile/assets/icon.png` |
 | Core framework logo | `Documentation/Assets/Logo.svg` and `Logo.png` in agents-tools/core |
+| Card fonts | `Brand/Fonts/` (static faces instantiated by `Brand/Fonts/instantiate.py`) |
