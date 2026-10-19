@@ -1,0 +1,10 @@
+{
+  "title": "Presentation check",
+  "commands": [
+    {
+      "command": "printf 'Presentation fixture\\n'",
+      "stdout": "Presentation fixture\n",
+      "exit_code": 0
+    }
+  ]
+}

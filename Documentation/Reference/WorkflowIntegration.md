@@ -12,8 +12,9 @@ not inherited from community defaults.
 | --- | --- | --- |
 | `policy.yml` | None; reads the caller's `pull_request` or non-deletion `push` event | `policy` / `policy / policy` |
 | `swift-package-ci.yml` | Required string `runner`; optional `package-directory` (default `.`), `format-configuration` (default `.swift-format`) | `swift-package` / `validate / swift-package` |
+| `presentation.yml` | Optional strings `record`, `recipe`, `output-directory` (defaults below) | `presentation` / `presentation / presentation` |
 
-Both require only `contents: read`, accept no caller secrets, and expose no outputs.
+All require only `contents: read`, accept no caller secrets, and expose no outputs.
 They use one sequential job each: any failed step fails the required context.
 There is no skipped-success aggregate. Explicit permissions exist at workflow
 and job scope; checkout credentials are not persisted. All external actions
@@ -118,26 +119,73 @@ jobs:
       format-configuration: .swift-format
 ```
 
-Keep caller job IDs `policy` and `validate`, and omit a custom job `name` if
-using the declared contexts. The workflow display names are not status-check
+Keep caller job IDs `policy`, `validate` and `presentation`, and omit a custom
+job `name` if using the declared contexts. The workflow display names are not status-check
 names. CLI validation also defines a local `smoke` job, and each tap defines a
 local `homebrew` job; each must execute its actual repository-owned checks and
 fail on failure. Do not create a placeholder passing job to activate rules.
 
-The standards repositories use local `check` jobs for their own checks and
-call only the reusable policy workflow: neither is a Swift package. This
-repository uses a relative call so a candidate tests its own implementation;
-external members must use full pins. Its push triggers cover all branches to
+The standards repositories use local `check` jobs and the reusable policy
+workflow for their own checks; neither is a Swift package. This repository
+also calls presentation against `Tests/Fixtures/Presentation` so the context
+appears on a real CI run. It uses relative calls so a candidate tests its own
+implementation; external members must use full pins. Its push triggers cover all branches to
 validate proposed shared changes before a PR; member callers above cover the
 default branch and PRs.
 
 Callers and callees both declare concurrency. Reusable groups have distinct
-`shared-policy-` / `shared-swift-ci-` prefixes because `github.workflow` is the
-caller's name inside a reusable workflow. Reusing the caller's group would
+`shared-policy-` / `shared-swift-ci-` / `shared-presentation-` prefixes because
+`github.workflow` is the caller's name inside a reusable workflow. Reusing the caller's group would
 cancel the caller itself. Use each reusable workflow at most once per caller;
 separate workflow names keep independent validation runs apart. See GitHub's
 [reuse contract](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows)
 and [concurrency contract](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
+
+## Presentation caller
+
+Both CLI repositories commit their Quick look inputs and exports in
+`Documentation/Assets/Demo/`: `record.json`, `recipe.json`, `Demo-light.svg`
+and `Demo-dark.svg`. Add this job to the validation caller shown above, using
+the same reviewed full SHA as its other shared workflows. The paths below are
+the defaults and are relative to the caller checkout:
+
+```yaml
+  presentation:
+    uses: agents-tools/.github/.github/workflows/presentation.yml@0000000000000000000000000000000000000000
+    with:
+      record: Documentation/Assets/Demo/record.json
+      recipe: Documentation/Assets/Demo/recipe.json
+      output-directory: Documentation/Assets/Demo
+```
+
+Replace the 40 zeros with the accepted shared commit. With caller job ID
+`presentation` and no caller `name` override, the exact required context is
+**`presentation / presentation`**. It runs on the caller's event commit,
+including the test merge commit on PRs. Core and the taps have no recording
+and do not require this context.
+
+The workflow checks out the caller under `caller/` and `agents-tools/.github`
+under `standard/`. The latter's ref is GitHub's `job.workflow_sha`: the commit
+that defines the executing reusable job, including for a relative self-call.
+GitHub documents this in the
+[`job` context](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#job-context).
+`github.workflow_sha` describes the caller and is not used for the standard
+checkout. No input selects a separate renderer revision. An absent or invalid
+job SHA fails before checkout, preventing checkout's default-branch fallback.
+This interface targets GitHub.com; the job workflow identity fields are not
+available on GitHub Enterprise Server.
+
+Python 3.13 runs `standard/Scripts/vendor/render_terminal.py` with `--record`,
+`--spec`, `--output-dir` and `--check`. The renderer and its sibling dependency
+come from the same standard commit as the pinned workflow; their original
+upstream commit, digests and license are recorded in
+[vendor provenance](../../Scripts/vendor/README.md). Python ignores Python
+environment variables and user site packages, and imports from the trusted
+renderer directory. Caller inputs are passed as quoted arguments through
+environment variables. The renderer never executes recorded commands or
+rewrites outputs in check mode. Missing or stale SVGs, invalid recordings and
+stale recipe DESIGN bindings fail the job. Regenerate with the pinned copy,
+review both themes, and commit the inputs and exports together.
 
 ## Adopt and update pins
 
@@ -146,7 +194,8 @@ and [concurrency contract](https://docs.github.com/en/actions/how-tos/write-work
    revision with `gh api repos/agents-tools/.github/commits/master --jq .sha`.
    A newer default SHA is an update observation, not permission to repin.
 2. Prepare a representative consumer PR using the proposed full SHA, including
-   a Swift member for Swift changes. Preserve its local smoke/release checks.
+   a Swift member for Swift changes and a CLI recording for presentation
+   changes. Preserve its local smoke/release checks.
    Inspect the real run at that exact candidate; do not claim consumer proof
    from static YAML checks or from a different pin. Before a broader wave,
    inspect current runner capacity and bound concurrent macOS jobs accordingly.
