@@ -229,7 +229,7 @@ adoption remains reported drift, never an implicit exemption.
     },
     "agents-tools/cli": {
       "default_branch": "master",
-      "description": "A package manager for agent skills and instructions.",
+      "description": "Install, lock and update agent skills and instructions.",
       "topics": [
         "agent-skills",
         "agents-md",
@@ -287,7 +287,7 @@ adoption remains reported drift, never an implicit exemption.
     },
     "skill-cli/cli": {
       "default_branch": "master",
-      "description": "A package manager for agent skills.",
+      "description": "Install, lock and update agent skills.",
       "topics": [
         "agent-skills",
         "ai-agents",

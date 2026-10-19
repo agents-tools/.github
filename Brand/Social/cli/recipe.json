@@ -3,7 +3,7 @@
   "design_sha256": "fbd533f948ff2d8b42ea3dc4ebfcce7785e9d182e1607d2dd8e819eea5467cba",
   "owner": "agents-tools",
   "title": "agents",
-  "about": "A package manager for agent skills and instructions.",
+  "about": "Install, lock and update agent skills and instructions.",
   "icon": "../../../profile/assets/icon.png",
   "font_title": "../../Fonts/GoogleSansCodeProportional-Bold.ttf",
   "font_body": "../../Fonts/GoogleSansCodeProportional-Regular.ttf",
