@@ -72,7 +72,8 @@ and any social card; catalog summaries may give additional context.
   `refs/tags/[0-9]*.[0-9]*.[0-9]*` covers unprefixed `X.Y.Z` tags. It is a
   GitHub fnmatch protection glob, not a SemVer validator; the member's release
   checklist validates the exact version. `skill-cli/cli` uses `refs/tags/v*`.
-  Taps, standards repositories and the website have no release tags of their own.
+  Taps, standards repositories, the website and the member profiles have no release tags of
+  their own.
 
 ### Activation and required checks
 
@@ -91,9 +92,11 @@ not assumed. Never add a nonexistent context to a live ruleset.
 | `agents-tools/cli` | `policy / policy`, `validate / swift-package`, `smoke`, `presentation / presentation` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
 | `agents-tools/homebrew-tap` | `policy / policy`, `homebrew` | None |
 | `agents-tools/agents-tools.github.io` | `policy / policy`, `site` | None |
+| `agents-tools/.github-private` | `policy / policy`, `check` | None |
 | `skill-cli/.github` | `policy / policy`, `check` | None |
 | `skill-cli/cli` | `policy / policy`, `validate / swift-package`, `smoke`, `presentation / presentation` | `vX.Y.Z` / `v*` |
 | `skill-cli/homebrew-tap` | `policy / policy`, `homebrew` | None |
+| `skill-cli/.github-private` | `policy / policy`, `check` | None |
 
 The 2026-10-19 audits observed `Swift Package` and
 `validate-commit-messages` in core, `Swift CLI` and
@@ -110,6 +113,16 @@ not replace the member adoption run.
 The [integration guide](Documentation/Reference/WorkflowIntegration.md)
 defines caller names and the rollout gate. Shared Swift automation still
 needs a representative member run before rollout.
+
+Each organization's private `.github-private` repository holds its member
+dashboard. It is declared with `"visibility": "private"` and follows the same
+repository settings, workflow token and CI. Repository rulesets are unavailable
+for private repositories on the organizations' Free plan, so its declaration
+records an `enforcement_gap`: the online check reports it as `GAP`, an explicit
+acceptance gap rather than a passing setting, and changes still land only
+through pull requests with passing checks. Private vulnerability reporting
+applies to public repositories only. Public membership checks exclude private
+repositories.
 
 Any setting, metadata, ruleset or required-context change updates this
 declaration and its explanatory table in the **same PR** as the associated
@@ -275,6 +288,18 @@ adoption remains reported drift, never an implicit exemption.
       ],
       "release_tag_patterns": []
     },
+    "agents-tools/.github-private": {
+      "default_branch": "master",
+      "description": "Member dashboard for agents maintenance.",
+      "topics": [],
+      "visibility": "private",
+      "required_checks": [
+        "policy / policy",
+        "check"
+      ],
+      "release_tag_patterns": [],
+      "enforcement_gap": "Repository rulesets are unavailable for private repositories on the Free plan."
+    },
     "skill-cli/.github": {
       "default_branch": "master",
       "description": "Organization profile, brand and shared standards for skill-cli",
@@ -321,6 +346,18 @@ adoption remains reported drift, never an implicit exemption.
         "homebrew"
       ],
       "release_tag_patterns": []
+    },
+    "skill-cli/.github-private": {
+      "default_branch": "master",
+      "description": "Member dashboard for skill maintenance.",
+      "topics": [],
+      "visibility": "private",
+      "required_checks": [
+        "policy / policy",
+        "check"
+      ],
+      "release_tag_patterns": [],
+      "enforcement_gap": "Repository rulesets are unavailable for private repositories on the Free plan."
     }
   }
 }

@@ -86,6 +86,12 @@ def validate_declaration(value):
                 raise ValueError(f"{name}.{key} must be unique and required checks cannot be empty")
         if any(not pattern.startswith("refs/tags/") for pattern in member["release_tag_patterns"]):
             raise ValueError(f"{name}: tag patterns must include refs/tags/")
+        if member.get("visibility", "public") not in {"public", "private"}:
+            raise ValueError(f"{name}.visibility must be public or private")
+        if "enforcement_gap" in member and (
+                member.get("visibility") != "private" or not isinstance(member["enforcement_gap"], str)
+                or not member["enforcement_gap"].strip()):
+            raise ValueError(f"{name}.enforcement_gap must be nonempty text on a private repository")
 
 
 def api(path, *, paginate=False):
@@ -179,18 +185,25 @@ def check_repository(name, member, declaration, get=api):
     prefix = "repos/" + name
     defaults = declaration["defaults"]
     findings = []
+    visibility = member.get("visibility", "public")
     projections = [
         ("repository", prefix, {**defaults["repository"], **{
-            key: member[key] for key in ("default_branch", "description", "topics")}}),
+            key: member[key] for key in ("default_branch", "description", "topics")},
+            "visibility": visibility}),
         ("workflow_token", prefix + "/actions/permissions/workflow", defaults["workflow_token"]),
-        ("private_vulnerability_reporting", prefix + "/private-vulnerability-reporting",
-         defaults["private_vulnerability_reporting"]),
     ]
+    # Private vulnerability reporting exists only for public repositories.
+    if visibility == "public":
+        projections.append(("private_vulnerability_reporting", prefix + "/private-vulnerability-reporting",
+                            defaults["private_vulnerability_reporting"]))
     for label, endpoint, expected in projections:
         try:
             findings += compare(name + "." + label, canonical(expected), canonical(get(endpoint)))
         except Unavailable as error:
             findings.append(f"UNKNOWN {name}.{label}: {error}")
+    if "enforcement_gap" in member:
+        # A declared plan limitation is an explicit acceptance gap, never a passing setting.
+        return findings + [f"GAP {name}.rulesets: {member['enforcement_gap']}"]
     try:
         summaries = collection(prefix + "/rulesets?includes_parents=true&per_page=100", get)
         if any(not isinstance(item, dict) or not isinstance(item.get("id"), int) for item in summaries):
@@ -223,7 +236,9 @@ def check_online(declaration, get=api):
                    or not isinstance(item.get("private"), bool)
                    or not isinstance(item.get("archived"), bool) for item in inventory):
                 raise Unavailable("invalid repository inventory")
-            expected = sorted(name for name in declaration["repositories"] if name.startswith(organization + "/"))
+            expected = sorted(name for name, member in declaration["repositories"].items()
+                              if name.startswith(organization + "/")
+                              and member.get("visibility", "public") == "public")
             observed = sorted(item["full_name"] for item in inventory if not item["private"] and not item["archived"])
             results += compare(organization + ".public_members", expected, observed)
         except Unavailable as error:
