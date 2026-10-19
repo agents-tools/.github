@@ -2,8 +2,8 @@
 
 <div align="center">
 <img src="https://raw.githubusercontent.com/agents-tools/.github/master/profile/assets/icon.png" width="128" alt="agents icon">
-<h1>A package manager for agent skills and instructions.</h1>
-<p>One command installs skills and writes the shared sections of AGENTS.md for Codex, Claude Code, Cursor, Gemini CLI and OpenCode, locks every version, reports drift and renders the same instructions for ChatGPT.</p>
+<h1>Install and update agent skills and instructions, resolved to exact versions.</h1>
+<p>Works with Codex, Claude Code, Cursor, Gemini CLI and OpenCode. Instructions become managed sections of each agent&#x27;s instruction file, upstream changes are previewed before you apply them, and the same instructions render for ChatGPT.</p>
 <p><a href="https://github.com/agents-tools/core/blob/master/Documentation/Proposals/AgentInstructions.md">Design</a> · <a href="https://github.com/agents-tools/.github/blob/master/CONTRIBUTING.md">Contributing</a> · <a href="https://github.com/agents-tools/.github/blob/master/SECURITY.md">Security</a> · <a href="https://github.com/agents-tools/.github/blob/master/SUPPORT.md">Support</a> · <a href="https://github.com/skill-cli">skill-cli</a></p>
 </div>
 
