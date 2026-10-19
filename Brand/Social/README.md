@@ -14,14 +14,14 @@ are retained in [core/SOURCE.md](core/SOURCE.md); tool cards use
 [profile/assets/icon.png](../../profile/assets/icon.png).
 
 Run from the repository root with
-[github-repo-steward](https://github.com/showxu/skills/tree/master/skills/github-repo-steward)
+[github-readme-design](https://github.com/showxu/skills/tree/master/skills/github-readme-design)
 installed and `rsvg-convert` available. Prepare the ignored environment:
 
 ```sh
-SOCIAL_SKILL="$HOME/.agents/skills/github-repo-steward"
+SOCIAL_SKILL="$HOME/.agents/skills/github-readme-design"
 python3 -m venv .build/social-cards/venv
-.build/social-cards/venv/bin/python -m pip install --no-cache-dir \
-  -r "$SOCIAL_SKILL/scripts/requirements.txt" fonttools==4.67.0
+.build/social-cards/venv/bin/python -m pip install --no-cache-dir fonttools==4.67.0 \
+  -r "$SOCIAL_SKILL/scripts/requirements.txt"
 ```
 
 Regenerate all three cards after updating their inputs and, when DESIGN changes,
