@@ -33,6 +33,8 @@ jobs:
           persist-credentials: false
       - name: Check titles, commit messages and added lines
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           python3 -I - <<'PY'
 """

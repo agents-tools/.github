@@ -13,7 +13,7 @@ not inherited from community defaults.
 | `policy.yml` | None; reads the caller's `pull_request` or non-deletion `push` event | `policy` / `policy / policy` |
 | `swift-package-ci.yml` | Required string `runner`; optional `package-directory` (default `.`), `format-configuration` (default `.swift-format`) | `swift-package` / `validate / swift-package` |
 
-Both require only `contents: read`, accept no secrets, and expose no outputs.
+Both require only `contents: read`, accept no caller secrets, and expose no outputs.
 They use one sequential job each: any failed step fails the required context.
 There is no skipped-success aggregate. Explicit permissions exist at workflow
 and job scope; checkout credentials are not persisted. All external actions
@@ -22,12 +22,23 @@ are pinned to full SHAs with version comments.
 Policy validates the PR title and every new commit subject using the types in
 [MAINTENANCE](../../MAINTENANCE.md#change-flow). It checks new commit messages
 and added lines for the declared forbidden attribution trailers, and added
-lines for whitespace errors and conflict markers. Product names remain valid
+lines for whitespace errors and conflict markers. The exact commit-message
+line `Signed-off-by: dependabot[bot] <support@github.com>` is allowed only when
+a read-only GitHub commit GET for that SHA confirms author `dependabot[bot]`
+of type `Bot`, committer `web-flow`, and signature verification `verified: true`
+with reason `valid`. Each qualifying commit is authenticated independently;
+the PR author or triggering actor does not exempt other commits. The policy
+step uses the automatic `github.token` as `GH_TOKEN` for this GET, needs no
+additional permissions, and fails closed if authentication is unavailable.
+All other attribution trailers remain forbidden, including other signoffs
+on a Dependabot commit. PR titles and added lines have no exception; squash
+merges still use the PR title and an empty body. Product names remain valid
 content. PR diffs use the merge base; push diffs use `before`/`after`. A first
 push of a topic branch compares with the fetched default branch, keeping the
 published legacy exceptions outside the new-work range. An empty repository
-bootstrap is outside this workflow's contract. Signing is enforced by the
-branch ruleset and maintainer verification, not by an author-identity filter.
+bootstrap is outside this workflow's contract. General signing enforcement
+belongs to the branch ruleset and maintainer verification; the signature check
+above authenticates only the Dependabot signoff exception.
 
 `Scripts/check-policy.py` owns policy behavior. Run
 `python3 Scripts/sync-policy-workflow.py` after changing it and commit both the

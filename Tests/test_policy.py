@@ -1,17 +1,29 @@
 import os
 import json
+from io import BytesIO
 from pathlib import Path
 import shutil
 import subprocess
 import textwrap
 import unittest
 from unittest import mock
+from urllib.error import URLError
 
 from test_profile import ROOT, load_script
 
 
 policy = load_script('policy', 'check-policy.py')
 generator = load_script('policy_generator', 'sync-policy-workflow.py')
+
+
+def dependabot_metadata(sha):
+    return {'sha': sha, 'author': {'login': 'dependabot[bot]', 'type': 'Bot'},
+            'committer': {'login': 'web-flow', 'type': 'User'},
+            'commit': {'verification': {'verified': True, 'reason': 'valid'}}}
+
+
+def github_response(metadata):
+    return BytesIO(json.dumps(metadata).encode())
 
 
 class PolicyTests(unittest.TestCase):
@@ -25,6 +37,18 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(policy.message_findings('commit', 'feat: support Codex and Claude\n\nKeep notices.'), [])
         for trailer in ('Co-authored-by', 'Generated-by', 'Signed-off-by', 'Assisted-by'):
             self.assertTrue(policy.message_findings('commit', 'fix: change\n\n' + trailer + ': someone'))
+
+    def test_dependabot_exception_is_exact_and_preserves_other_trailer_bans(self):
+        signoff = policy.DEPENDABOT_SIGNOFF
+        for trailer in (signoff.lower(), ' ' + signoff, signoff + ' ', signoff + '\r',
+                        signoff.replace('support@github.com', 'someone@example.com'),
+                        'Co-authored-by: someone', 'Generated-by: tool', 'Generated-with: tool',
+                        'Made-with: tool', 'Assisted-by: tool', 'Powered-by: tool'):
+            with self.subTest(trailer=trailer):
+                self.assertTrue(policy.message_findings(
+                    'commit', 'chore(deps): update\n\n' + signoff + '\n' + trailer, dependabot=True))
+        self.assertTrue(policy.message_findings('PR title', 'chore: update\n' + signoff))
+        self.assertTrue(policy.added_findings('@@ -0,0 +1 @@\n+' + signoff + '\n'))
 
     def test_only_added_lines_are_scanned(self):
         patch = 'diff --git a/file b/file\n--- a/file\n+++ b/file\n@@ -1,2 +1 @@\n-<<<<<<< old\n-Generated-by: old\n+Useful documentation about Codex\n'
@@ -75,7 +99,91 @@ class GitRangeTests(unittest.TestCase):
         return self.git('rev-parse', 'HEAD')
 
     def event(self, head, title='fix: update content'):
-        return {'pull_request': {'base': {'sha': self.base}, 'head': {'sha': head}, 'title': title}}
+        return {'repository': {'full_name': 'owner/member'},
+                'pull_request': {'base': {'sha': self.base}, 'head': {'sha': head}, 'title': title}}
+
+    def dependency_update(self):
+        (self.root / 'file').write_text('updated dependency\n')
+        self.git('config', 'user.name', 'dependabot[bot]')
+        self.git('config', 'user.email', '49699333+dependabot[bot]@users.noreply.github.com')
+        return self.commit('chore(deps): bump dependency from 1.0 to 1.1\n\n' + policy.DEPENDABOT_SIGNOFF)
+
+    @mock.patch.dict(os.environ, {'GH_TOKEN': 'test-token'})
+    def test_authenticated_dependabot_update_passes_on_pr_and_push(self):
+        head = self.dependency_update()
+        events = ((self.event(head), 'pull_request'),
+                  ({'repository': {'full_name': 'owner/member'}, 'before': self.base, 'after': head}, 'push'))
+        for event, name in events:
+            with self.subTest(event=name), mock.patch.object(
+                policy, 'urlopen', return_value=github_response(dependabot_metadata(head))
+            ) as get:
+                self.assertEqual(policy.check(event, name), [])
+                request = get.call_args.args[0]
+                self.assertEqual(request.full_url, 'https://api.github.com/repos/owner/member/commits/' + head)
+                self.assertEqual(request.get_method(), 'GET')
+                self.assertEqual(request.get_header('Authorization'), 'Bearer test-token')
+
+    @mock.patch.dict(os.environ, {'GH_TOKEN': 'test-token'})
+    def test_same_signoff_fails_without_authenticated_dependabot_authorship(self):
+        head = self.dependency_update()
+        variants = [
+            {'author': {'login': 'contributor', 'type': 'User'}},
+            {'author': {'login': 'dependabot[bot]', 'type': 'User'}},
+            {'author': None}, {'author': 'dependabot[bot]'},
+            {'committer': {'login': 'contributor', 'type': 'User'}},
+            {'commit': {'verification': {'verified': False, 'reason': 'unsigned'}}},
+            {'commit': {'verification': {'verified': True, 'reason': 'invalid'}}},
+            {'commit': {'verification': None}}, {'commit': None},
+            {'sha': 'a' * 40},
+        ]
+        for changed in variants:
+            with self.subTest(metadata=changed), mock.patch.object(
+                policy, 'urlopen', return_value=github_response({**dependabot_metadata(head), **changed})
+            ):
+                self.assertEqual(policy.check(self.event(head), 'pull_request'),
+                                 [head + ': forbidden attribution trailer'])
+
+    def test_commit_message_carriage_return_does_not_match_exact_signoff(self):
+        (self.root / 'file').write_text('updated dependency\n')
+        self.git('add', '.')
+        self.git('commit', '-q', '--cleanup=verbatim', '-m',
+                 'chore(deps): update dependency\n\n' + policy.DEPENDABOT_SIGNOFF + '\r\n')
+        head = self.git('rev-parse', 'HEAD')
+        with mock.patch.object(policy, 'authenticated_dependabot_commit') as authenticate:
+            self.assertEqual(policy.check(self.event(head), 'pull_request'),
+                             [head + ': forbidden attribution trailer'])
+            authenticate.assert_not_called()
+
+    @mock.patch.dict(os.environ, {'GH_TOKEN': 'test-token'})
+    def test_dependabot_pr_does_not_exempt_another_authors_commit(self):
+        first = self.dependency_update()
+        self.git('config', 'user.name', 'Contributor')
+        self.git('config', 'user.email', 'contributor@example.invalid')
+        (self.root / 'file').write_text('another dependency update\n')
+        second = self.commit('chore(deps): update another dependency\n\n' + policy.DEPENDABOT_SIGNOFF)
+        other = {**dependabot_metadata(second), 'author': {'login': 'contributor', 'type': 'User'}}
+        event = self.event(second)
+        event['pull_request']['user'] = {'login': 'dependabot[bot]', 'type': 'Bot'}
+        with mock.patch.object(policy, 'urlopen', side_effect=[
+            github_response(dependabot_metadata(first)), github_response(other)
+        ]) as get:
+            self.assertEqual(policy.check(event, 'pull_request'), [second + ': forbidden attribution trailer'])
+            self.assertEqual(get.call_count, 2)
+
+    @mock.patch.dict(os.environ, {'GH_TOKEN': 'test-token'})
+    def test_dependabot_authentication_fails_closed_when_unavailable_or_malformed(self):
+        head = self.dependency_update()
+        with mock.patch.object(policy, 'urlopen', side_effect=URLError('unavailable')):
+            with self.assertRaises(URLError):
+                policy.check(self.event(head), 'pull_request')
+        with mock.patch.object(policy, 'urlopen', return_value=github_response([])):
+            self.assertTrue(policy.check(self.event(head), 'pull_request'))
+        with mock.patch.object(policy, 'urlopen', return_value=BytesIO(b'not JSON')):
+            with self.assertRaises(ValueError):
+                policy.check(self.event(head), 'pull_request')
+        with mock.patch.dict(os.environ, {}, clear=True):
+            with self.assertRaises(KeyError):
+                policy.check(self.event(head), 'pull_request')
 
     def test_new_branch_does_not_rescan_legacy_ancestors(self):
         (self.root / 'file').write_text('new content\n')

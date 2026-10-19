@@ -19,10 +19,16 @@ owns the agents-tools identity.
    `perf`, `refactor`, `revert`, `style` and `test`.
 3. Sign all new commits. Run the member's checks from its README and include
    results in the PR. Added lines must have no trailing whitespace, conflict
-   markers or attribution trailers. Commit messages must have no attribution
-   trailers (`Co-authored-by`, `Signed-off-by`, `Generated-by`,
-   `Generated-with`, `Made-with`, `Assisted-by`, `Powered-by`). Preserve
-   authorship in Git's author fields and existing legal/provenance records.
+   markers or attribution trailers. Commit messages forbid `Co-authored-by`,
+   `Signed-off-by`, `Generated-by`, `Generated-with`, `Made-with`,
+   `Assisted-by` and `Powered-by` trailers. The sole exception is the exact
+   line `Signed-off-by: dependabot[bot] <support@github.com>` on a commit
+   authenticated through GitHub as authored by `dependabot[bot]` (Bot), with
+   a valid verified signature and the `web-flow` committer. This exception
+   applies only to that commit's message; PR titles, added lines and squash
+   messages retain their restrictions. Unavailable authentication fails the
+   check. Preserve authorship in Git's author fields and existing
+   legal/provenance records.
 4. Review the actual final head. Fix or answer every review finding on the PR
    and resolve every thread. Zero required approvals does not waive review.
 5. Squash-merge only the reviewed head after all required contexts succeed.
@@ -199,7 +205,7 @@ adoption remains reported drift, never an implicit exemption.
     },
     "agents-tools/core": {
       "default_branch": "master",
-      "description": "Swift libraries for managing agent skills and instructions from declared sources",
+      "description": "Swift libraries behind agents and skill: sources, locks, skills, instructions and watch.",
       "topics": [
         "agent-skills",
         "agents-md",
@@ -217,7 +223,7 @@ adoption remains reported drift, never an implicit exemption.
     },
     "agents-tools/cli": {
       "default_branch": "master",
-      "description": "Manage agent skills and instructions from the command line",
+      "description": "A package manager for agent skills and instructions.",
       "topics": [
         "agent-skills",
         "agents-md",
@@ -264,7 +270,7 @@ adoption remains reported drift, never an implicit exemption.
     },
     "skill-cli/cli": {
       "default_branch": "master",
-      "description": "Install, restore and watch agent skills from the command line",
+      "description": "A package manager for agent skills.",
       "topics": [
         "agent-skills",
         "ai-agents",
