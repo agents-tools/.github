@@ -34,6 +34,7 @@ CODEOWNERS, workflows, and repository-specific development instructions.
 | `DESIGN.md` | Brand colors, the agents app icon entry and framework logo entries |
 | `Brand/Icon/` | App icon layer artwork |
 | `Brand/Exports/agents/` | Icon Composer document generated from the app icon entry |
+| [`Brand/Social/`](Brand/Social/README.md) | Repository social cards, recipes, layout receipts and regeneration commands |
 | `Scripts/` | Profile/policy generators and read-only repository/settings checks |
 | `Tests/` | Profile, policy, settings and presentation tests and fixtures |
 | `.github/workflows/` | Shared policy, Swift CI and presentation checks, plus this repository's callers |
