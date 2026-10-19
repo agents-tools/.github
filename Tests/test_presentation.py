@@ -29,7 +29,7 @@ class PresentationContractTests(unittest.TestCase):
         rows = re.findall(r'^\| `([^`]+)` \| `([^`]+)` \| `([0-9a-f]{64})` \|$',
                           (VENDOR / 'README.md').read_text(), re.M)
         self.assertEqual({name for name, _, _ in rows},
-                         {'render_terminal.py', 'presentation.py', 'LICENSE'})
+                         {'render_terminal.py', 'presentation.py', 'render_profile.py', 'LICENSE'})
         for name, _, digest in rows:
             with self.subTest(file=name):
                 self.assertEqual(hashlib.sha256((VENDOR / name).read_bytes()).hexdigest(), digest)

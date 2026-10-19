@@ -7,7 +7,6 @@ import io
 import json
 from pathlib import Path
 import re
-import shutil
 import subprocess
 import sys
 import traceback
@@ -37,25 +36,6 @@ def committed_catalog():
     return json.loads((ROOT / "profile/catalog.json").read_text(encoding="utf-8"))
 
 
-def base_catalog():
-    catalog = committed_catalog()
-    catalog.pop("mark", None)
-    catalog.pop("quickstart", None)
-    return catalog
-
-
-def catalog_with_quickstart():
-    catalog = base_catalog()
-    catalog["quickstart"] = {"title": "Get started", "commands": ["agents --help"]}
-    return catalog
-
-
-def catalog_with_optional_sections():
-    catalog = catalog_with_quickstart()
-    catalog["mark"] = {"path": "profile/mark.png", "alt": "Example mark"}
-    return catalog
-
-
 def repository(name, *, archived=False, private=False):
     return {"name": name, "archived": archived, "private": private}
 
@@ -66,364 +46,28 @@ class Response(io.BytesIO):
         self.headers = {"Link": link}
 
 
-class RenderingTests(unittest.TestCase):
-    def test_committed_catalog_is_deterministic_and_current(self):
-        catalog = committed_catalog()
-        rendered = renderer.render(catalog).encode("utf-8")
-        reordered = json.loads(json.dumps(catalog, sort_keys=True))
-        self.assertEqual(rendered, renderer.render(reordered).encode("utf-8"))
-        self.assertEqual(rendered, (ROOT / "profile/README.md").read_bytes())
-        self.assertTrue(rendered.endswith(b"\n"))
-        self.assertFalse(rendered.endswith(b"\n\n"))
+class SharedRendererTests(unittest.TestCase):
+    def test_committed_profile_is_current(self):
+        self.assertEqual(renderer.main(["--check"]), 0)
 
-    def test_optional_sections_render_independently(self):
-        mark = '<img src="https://raw.githubusercontent.com/agents-tools/.github/master/profile/mark.png" width="128" alt="Example mark">\n'
-        quickstart = "\n### Get started\n\n```sh\nagents --help\n```\n"
-        for has_mark in (False, True):
-            for has_quickstart in (False, True):
-                with self.subTest(mark=has_mark, quickstart=has_quickstart):
-                    catalog = catalog_with_optional_sections()
-                    if not has_mark:
-                        del catalog["mark"]
-                    if not has_quickstart:
-                        del catalog["quickstart"]
-                    rendered = renderer.render(catalog)
-                    heading = f'<h1>{catalog["promise"]["heading"]}</h1>'
-                    self.assertIn('<div align="center">\n' + (mark if has_mark else "") + heading, rendered)
-                    self.assertIn("</div>\n" + (quickstart if has_quickstart else "") + "\n### Use agents\n", rendered)
-                    self.assertEqual(rendered.count("<img "), int(has_mark))
-                    self.assertEqual(rendered.count("```sh"), int(has_quickstart))
-                    self.assertNotIn("<picture>", rendered)
-                    self.assertNotIn("<source ", rendered)
+    def test_wrapper_uses_vendored_renderer_catalog_and_recipe(self):
+        command = renderer.command(ROOT, check=True)
+        self.assertEqual(Path(command[2]), ROOT / "Scripts/vendor/render_profile.py")
+        self.assertEqual(command[3:], ["--catalog", str(ROOT / "profile/catalog.json"),
+                                       "--spec", str(ROOT / "Brand/Profile/recipe.json"),
+                                       "--output", str(ROOT / "profile/README.md"), "--check"])
 
-    def test_mark_with_dark_variant_uses_picture_and_light_fallback(self):
-        catalog = catalog_with_optional_sections()
-        catalog["mark"]["dark"] = "profile/mark-dark.png"
-        rendered = renderer.render(catalog)
-        self.assertIn('''<div align="center">
-<picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/agents-tools/.github/master/profile/mark-dark.png">
-<img src="https://raw.githubusercontent.com/agents-tools/.github/master/profile/mark.png" width="128" alt="Example mark">
-</picture>
-<h1>''', rendered)
-        self.assertEqual(rendered.count("<picture>"), 1)
-        self.assertEqual(rendered.count("<source "), 1)
-        self.assertEqual(rendered.count("<img "), 1)
-
-    def test_layout_and_order(self):
-        catalog = {
-            "organization": "example",
-            "mark": {"path": "profile/mark.png", "alt": "Example mark"},
-            "promise": {"heading": "Heading", "secondary": "Secondary"},
-            "navigation": [
-                {"title": "Docs", "url": "https://example.com/docs"},
-                {"title": "Help", "url": "https://example.com/help"},
-            ],
-            "quickstart": {"title": "Start", "commands": ["first", "second"]},
-            "groups": [
-                {"title": "Tools", "repositories": [{"name": "tool", "summary": "Use `tool`."}]},
-                {"title": "More", "repositories": [{"name": "other", "summary": "Another tool."}]},
-            ],
-        }
-        self.assertEqual(renderer.render(catalog), '''<!-- Generated by Scripts/render-profile.py from profile/catalog.json. -->
-
-<div align="center">
-<img src="https://raw.githubusercontent.com/example/.github/master/profile/mark.png" width="128" alt="Example mark">
-<h1>Heading</h1>
-<p>Secondary</p>
-<p><a href="https://example.com/docs">Docs</a> · <a href="https://example.com/help">Help</a></p>
-</div>
-
-### Start
-
-```sh
-first
-second
-```
-
-### Tools
-
-<table>
-<tr><td><strong><a href="https://github.com/example/tool">tool</a></strong><br>Use <code>tool</code>.</td></tr>
-</table>
-
-### More
-
-<table>
-<tr><td><strong><a href="https://github.com/example/other">other</a></strong><br>Another tool.</td></tr>
-</table>
-''')
-
-    def test_mark_path_encodes_reserved_filename_characters(self):
-        for has_dark in (False, True):
-            for path, encoded in (
-                ("profile/mark#1.png", "profile/mark%231.png"),
-                ("profile/mark?1.png", "profile/mark%3F1.png"),
-                ("profile/mark%23.png", "profile/mark%2523.png"),
-                ("profile/nested folder/mark#1?100%.png", "profile/nested%20folder/mark%231%3F100%25.png"),
-                ("profile/标志.png", "profile/%E6%A0%87%E5%BF%97.png"),
-            ):
-                with self.subTest(dark=has_dark, path=path):
-                    catalog = catalog_with_optional_sections()
-                    catalog["mark"]["path"] = path
-                    if has_dark:
-                        catalog["mark"]["dark"] = "dark/" + path
-                    rendered = renderer.render(catalog)
-                    self.assertIn(
-                        f'<img src="https://raw.githubusercontent.com/agents-tools/.github/master/{encoded}"',
-                        rendered,
-                    )
-                    if has_dark:
-                        self.assertIn(
-                            '<source media="(prefers-color-scheme: dark)" '
-                            f'srcset="https://raw.githubusercontent.com/agents-tools/.github/master/dark/{encoded}">',
-                            rendered,
-                        )
-
-    def test_catalog_text_is_escaped_for_html_and_url_contexts(self):
-        raw = '<tag> & "quote" \'single\''
-        escaped = '&lt;tag&gt; &amp; &quot;quote&quot; &#x27;single&#x27;'
-        encoded_path = '%3Ctag%3E%20%26%20%22quote%22%20%27single%27'
-
-        def replace_text(value):
-            if isinstance(value, dict):
-                return {key: replace_text(item) for key, item in value.items()}
-            if isinstance(value, list):
-                return [replace_text(item) for item in value]
-            return raw
-
-        catalog = catalog_with_optional_sections()
-        catalog["mark"]["dark"] = "profile/mark-dark.png"
-        catalog = replace_text(catalog)
-        catalog["quickstart"]["commands"] = ["agents list"]
-        rendered = renderer.render(catalog)
-        self.assertNotIn(raw, rendered)
-        for fragment in (
-            f'/{escaped}/.github/master/{encoded_path}" width="128" alt="{escaped}"',
-            f'srcset="https://raw.githubusercontent.com/{escaped}/.github/master/{encoded_path}">',
-            f"<h1>{escaped}</h1>", f"<p>{escaped}</p>",
-            f'<a href="{escaped}">{escaped}</a>', f"### {escaped}",
-            f'/{escaped}/{escaped}">{escaped}</a>',
-            f"<br>{escaped}</td>",
-        ):
-            with self.subTest(fragment=fragment):
-                self.assertIn(fragment, rendered)
-
-    def test_quickstart_commands_preserve_shell_text_verbatim(self):
-        catalog = catalog_with_quickstart()
-        commands = ['agents add owner/repo --agent "*" > skills.txt && echo \'<done & ready>\'', 'echo "`pwd`"']
-        catalog["quickstart"]["commands"] = commands
-        checks.validate_catalog(catalog)
-        rendered = renderer.render(catalog)
-        self.assertIn("```sh\n" + "\n".join(commands) + "\n```", rendered)
-
-    def test_quickstart_rejects_line_breaks_and_fence_backticks(self):
-        for command in ("first\nsecond", "agents list\n", "first\rsecond", "first\r\nsecond", "```", "   ````  ", "echo ```"):
-            with self.subTest(command=command):
-                catalog = catalog_with_quickstart()
-                catalog["quickstart"]["commands"] = [command]
-                for validate in (renderer.render, checks.validate_catalog):
-                    with self.subTest(validate=validate.__name__):
-                        with self.assertRaisesRegex(ValueError, r"quickstart.commands\[0\]"):
-                            validate(catalog)
-
-    def test_summary_code_spans_escape_contents_and_preserve_unmatched_backticks(self):
-        self.assertEqual(
-            renderer.render_summary('Run `<script>&"` then `skill` & leave `open.'),
-            'Run <code>&lt;script&gt;&amp;&quot;</code> then <code>skill</code> &amp; leave `open.',
-        )
-        self.assertEqual(renderer.render_summary("`one\ntwo`"), "`one\ntwo`")
-
-
-class RenderCommandTests(unittest.TestCase):
-    def setUp(self):
-        self.root = ROOT / ".build/test-profile"
-        self.root.mkdir(parents=True)
-        self.addCleanup(shutil.rmtree, self.root)
-        (self.root / "profile").mkdir()
-        (self.root / "profile/catalog.json").write_text(
-            json.dumps(committed_catalog()), encoding="utf-8"
-        )
-        self.destination = self.root / "profile/README.md"
-        self.expected = renderer.render(committed_catalog()).encode("utf-8")
-
-    def run_check(self):
-        output = io.StringIO()
-        with contextlib.redirect_stdout(output):
-            status = renderer.main(["--check"], root=self.root)
-        return status, output.getvalue()
-
-    def test_write_generates_utf8_bytes(self):
-        self.assertEqual(renderer.main([], root=self.root), 0)
-        self.assertEqual(self.destination.read_bytes(), self.expected)
-
-    def test_check_equal_writes_nothing(self):
-        self.destination.write_bytes(self.expected)
-        before = self.destination.stat().st_mtime_ns
-        self.assertEqual(self.run_check(), (0, ""))
-        self.assertEqual(self.destination.stat().st_mtime_ns, before)
-
-    def test_check_drift_prints_unified_diff_without_writing(self):
-        self.destination.write_bytes(b"outdated\n")
-        before = self.destination.stat().st_mtime_ns
-        status, output = self.run_check()
-        self.assertEqual(status, 1)
-        self.assertTrue(output.startswith("--- profile/README.md\n+++ profile/README.md (generated)\n@@"))
-        self.assertIn("-outdated\n", output)
-        self.assertIn("+<!-- Generated", output)
-        self.assertEqual(self.destination.read_bytes(), b"outdated\n")
-        self.assertEqual(self.destination.stat().st_mtime_ns, before)
-
-    def test_check_missing_output_does_not_create_it(self):
-        status, output = self.run_check()
-        self.assertEqual(status, 1)
-        self.assertIn("+<!-- Generated", output)
-        self.assertFalse(self.destination.exists())
-
-    def test_check_detects_byte_level_newline_drift(self):
-        for actual in (self.expected[:-1], self.expected + b"\n", self.expected.replace(b"\n", b"\r\n")):
-            with self.subTest(actual=actual[-20:]):
-                self.destination.write_bytes(actual)
-                status, output = self.run_check()
-                self.assertEqual(status, 1)
-                self.assertIn("@@", output)
-                self.assertEqual(self.destination.read_bytes(), actual)
-
-    def test_invalid_command_never_overwrites_generated_profile(self):
-        self.destination.write_bytes(self.expected)
-        catalog = catalog_with_quickstart()
-        catalog["quickstart"]["commands"] = ["```"]
-        (self.root / "profile/catalog.json").write_text(json.dumps(catalog), encoding="utf-8")
-        before = self.destination.stat().st_mtime_ns
-        for arguments in ([], ["--check"]):
-            with self.subTest(arguments=arguments), contextlib.redirect_stderr(io.StringIO()) as error:
-                self.assertEqual(renderer.main(arguments, root=self.root), 1)
-                self.assertIn("three consecutive backticks", error.getvalue())
-                self.assertEqual(self.destination.read_bytes(), self.expected)
-                self.assertEqual(self.destination.stat().st_mtime_ns, before)
-
-
-class CatalogValidationTests(unittest.TestCase):
-    def setUp(self):
-        self.root = ROOT / ".build/test-catalog"
-        self.root.mkdir(parents=True)
-        self.addCleanup(shutil.rmtree, self.root)
-        (self.root / "profile").mkdir()
-        (self.root / "profile/mark.png").write_bytes(b"test mark")
-
-    def test_committed_catalog_is_valid(self):
+    def test_catalog_is_validated_by_the_shared_schema(self):
         checks.validate_catalog(committed_catalog())
-
-    def test_optional_sections_validate_independently(self):
-        for has_mark in (False, True):
-            for has_quickstart in (False, True):
-                with self.subTest(mark=has_mark, quickstart=has_quickstart):
-                    catalog = catalog_with_optional_sections()
-                    if not has_mark:
-                        del catalog["mark"]
-                    if not has_quickstart:
-                        del catalog["quickstart"]
-                    checks.validate_catalog(catalog, self.root)
-
-    def test_mark_dark_accepts_existing_repository_file(self):
-        path = "profile/dark mark#1?100%.png"
-        (self.root / path).write_bytes(b"test dark mark")
-        catalog = catalog_with_optional_sections()
-        catalog["mark"]["dark"] = path
-        checks.validate_catalog(catalog, self.root)
-
-    def test_mark_dark_must_be_nonempty_string_when_present(self):
-        for value in (None, "", "  ", [], {}, 42, False):
-            with self.subTest(value=value):
-                catalog = catalog_with_optional_sections()
-                catalog["mark"]["dark"] = value
-                with self.assertRaisesRegex(ValueError, r"mark\.dark must be a non-empty string"):
-                    checks.validate_catalog(catalog, self.root)
-
-    def test_mark_dark_requires_light_path(self):
-        catalog = catalog_with_optional_sections()
-        catalog["mark"]["dark"] = catalog["mark"].pop("path")
-        with self.assertRaisesRegex(ValueError, r"mark\.path must be a non-empty string"):
-            checks.validate_catalog(catalog, self.root)
-
-    def test_optional_sections_must_be_valid_objects_when_present(self):
-        for key in ("mark", "quickstart"):
-            for value in (None, "", "  ", [], {}, 42):
-                with self.subTest(key=key, value=value):
-                    catalog = base_catalog()
-                    catalog[key] = value
-                    with self.assertRaisesRegex(ValueError, key):
-                        checks.validate_catalog(catalog, self.root)
-
-    def test_required_fields_are_present_nonempty_and_correctly_typed(self):
-        string_paths = [
-            ("organization",), ("promise", "heading"), ("promise", "secondary"),
-            ("promise", "description"), ("mark", "path"), ("mark", "alt"),
-            ("navigation", 0, "title"), ("navigation", 0, "url"),
-            ("quickstart", "title"), ("groups", 0, "title"),
-            ("groups", 0, "repositories", 0, "name"),
-            ("groups", 0, "repositories", 0, "summary"),
-        ]
-        container_paths = [
-            ("promise",), ("navigation",),
-            ("quickstart", "commands"), ("groups",), ("groups", 0, "repositories"),
-        ]
-        for path in string_paths + container_paths:
-            for replacement in (None, "", "  ", [], {}, 42):
-                with self.subTest(path=path, replacement=replacement):
-                    catalog = catalog_with_optional_sections()
-                    parent = catalog
-                    for key in path[:-1]:
-                        parent = parent[key]
-                    if replacement is None:
-                        del parent[path[-1]]
-                    else:
-                        parent[path[-1]] = replacement
-                    with self.assertRaises(ValueError):
-                        checks.validate_catalog(catalog, self.root)
-
-    def test_invalid_list_entries_and_commands(self):
-        cases = [
-            ("navigation", [None]), ("groups", [None]),
-            ("quickstart", {"title": "Start", "commands": [""]}),
-            ("quickstart", {"title": "Start", "commands": ["first\nsecond"]}),
-            ("groups", [{"title": "Tools", "repositories": [None]}]),
-        ]
-        for key, value in cases:
-            with self.subTest(key=key, value=value):
-                catalog = committed_catalog()
-                catalog[key] = value
+        for mutation in (lambda c: c["groups"][0]["repositories"][0].pop("icon"),
+                         lambda c: c["groups"][0]["repositories"][0].update(summary="Old field."),
+                         lambda c: c["navigation"].update(design={"label": "Design", "url": "https://example.test"}),
+                         lambda c: c.update(mark="javascript:alert(1)")):
+            with self.subTest(mutation=mutation):
+                catalog = copy.deepcopy(committed_catalog())
+                mutation(catalog)
                 with self.assertRaises(ValueError):
                     checks.validate_catalog(catalog)
-        with self.assertRaises(ValueError):
-            checks.validate_catalog([])
-
-    def test_urls_require_https_and_host(self):
-        for url in ("http://example.com", "javascript:alert(1)", "//example.com", "https://", "https://[broken"):
-            with self.subTest(url=url):
-                catalog = committed_catalog()
-                catalog["navigation"][0]["url"] = url
-                with self.assertRaises(ValueError):
-                    checks.validate_catalog(catalog)
-
-    def test_duplicate_repositories_across_groups(self):
-        catalog = committed_catalog()
-        duplicate = copy.deepcopy(catalog["groups"][0]["repositories"][0])
-        duplicate["name"] = duplicate["name"].upper()
-        catalog["groups"][1]["repositories"].append(duplicate)
-        with self.assertRaisesRegex(ValueError, "duplicate repository name"):
-            checks.validate_catalog(catalog)
-
-    def test_mark_requires_existing_repository_file(self):
-        for key in ("path", "dark"):
-            for path in ("profile/missing.png", "profile", "../outside.png", str(ROOT / "README.md")):
-                with self.subTest(key=key, path=path):
-                    catalog = catalog_with_optional_sections()
-                    catalog["mark"][key] = path
-                    with self.assertRaisesRegex(
-                        ValueError, rf"mark\.{key} must name an existing file inside the repository"
-                    ):
-                        checks.validate_catalog(catalog, self.root)
 
 
 class MembershipTests(unittest.TestCase):
@@ -450,7 +94,7 @@ class MembershipTests(unittest.TestCase):
         for name, archived in (("old", True), (".github", False)):
             with self.subTest(name=name):
                 catalog = copy.deepcopy(self.catalog)
-                catalog["groups"][0]["repositories"].append({"name": name, "summary": "Example."})
+                catalog["groups"][0]["repositories"].append({"name": name, "outcome": "Example.", "icon": "https://example.test/icon.svg"})
                 with self.assertRaisesRegex(ValueError, "extra in catalog: " + re.escape(name)):
                     checks.compare_membership(catalog, self.repositories + [repository(name, archived=archived)])
 

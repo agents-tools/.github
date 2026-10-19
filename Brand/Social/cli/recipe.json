@@ -1,6 +1,6 @@
 {
   "design_source": "../../../DESIGN.md",
-  "design_sha256": "1e81e6410dbb0a39395f7458de203c796bafeecfbf8dc54e3c8076e1ef727d2b",
+  "design_sha256": "5dfe89d36900379acda78456aa45615313d07330256e93f8e91854dd91a67697",
   "owner": "agents-tools",
   "title": "agents",
   "about": "Install and update agent skills and instructions, resolved to exact versions.",
