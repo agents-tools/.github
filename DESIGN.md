@@ -89,6 +89,26 @@ The website maps these roles to existing tokens; it defines no colors of its own
 | Labels and navigation | `font-card-owner` |
 | Code and terminal | `font-terminal` |
 
+### Profile
+
+The public profile (`profile/README.md`) and the member dashboard in the
+private `.github-private` repository are rendered by `github-readme-design`'s
+`render_profile.py` from `profile/catalog.json`. `Brand/Profile/recipe.json`
+resolves these tokens and records this file's digest.
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `public_header_icon_size` | 128 px | Umbrella mark on the public profile |
+| `member_header_icon_size` | 64 px | Umbrella mark on the member dashboard |
+| `public_row_icon_size` | 40 px | Repository icons on the public profile |
+| `member_row_icon_size` | 24 px | Repository icons on the member dashboard |
+| `badge_style` | `flat` | CI and release badges on the member dashboard |
+
+| Field | Source |
+| --- | --- |
+| Row icon | The logo in that repository's README header; the tap and the website use the agents mark |
+| Outcome | One plain-text sentence per repository in the catalog |
+
 ### Terminal
 
 | Role | Light | Dark |

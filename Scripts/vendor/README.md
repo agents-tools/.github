@@ -21,6 +21,23 @@ installation in the member's CI. The
 [integration guide](../../Documentation/Reference/WorkflowIntegration.md#presentation-caller)
 owns the caller interface and pin mechanism.
 
+## Profile renderer
+
+`render_profile.py` is copied byte for byte from
+[`showxu/skills`](https://github.com/showxu/skills) at commit
+`bb3d82ee4aca7e8de913a47b98c934b0f1ce4fa9`. It imports the sibling
+`presentation.py`, whose bytes are identical at both commits.
+
+| Local file | Upstream path | SHA-256 |
+| --- | --- | --- |
+| `render_profile.py` | `skills/github-readme-design/scripts/render_profile.py` | `af04459c5753c0b045887b22bc17e294dcd97f84114945291867bc58d2f28fac` |
+
+[`Scripts/render-profile.py`](../render-profile.py) runs it with
+`profile/catalog.json` and `Brand/Profile/recipe.json`; `Scripts/check`
+validates the catalog with it. The renderer and its input contract are owned
+upstream; update it like the terminal renderer, from
+`skills/github-readme-design/scripts/`, then regenerate the profile.
+
 ## Updating
 
 Review the upstream changes and select one full commit SHA for the renderer,

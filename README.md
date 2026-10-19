@@ -28,14 +28,15 @@ CODEOWNERS, workflows, and repository-specific development instructions.
 | `Documentation/Reference/WorkflowIntegration.md` | Reusable workflow interfaces, caller pins and required contexts |
 | `.github/ISSUE_TEMPLATE/` | Bug and feature templates, plus security reporting guidance |
 | `.github/pull_request_template.md` | Change summary, validation, and documentation prompts |
-| `profile/catalog.json` | Promise, navigation, and repository groups for the profile |
+| `profile/catalog.json` | Promise, account description, navigation, repository groups, outcomes and icons for the profile |
 | `profile/README.md` | Organization profile generated from the catalog |
 | `profile/assets/` | Organization avatar and profile mark |
 | `DESIGN.md` | Brand colors, the agents app icon entry and framework logo entries |
 | `Brand/Icon/` | App icon layer artwork |
 | `Brand/Exports/agents/` | Icon Composer document generated from the app icon entry |
 | [`Brand/Social/`](Brand/Social/README.md) | Repository social cards, recipes, layout receipts and regeneration commands |
-| `Scripts/` | Profile/policy generators and read-only repository/settings checks |
+| `Brand/Profile/recipe.json` | Profile tokens resolved from DESIGN.md |
+| `Scripts/` | Profile/policy generators, [vendored renderers](Scripts/vendor/README.md) and read-only repository/settings checks |
 | `Tests/` | Profile, policy, settings and presentation tests and fixtures |
 | `.github/workflows/` | Shared policy, Swift CI and presentation checks, plus this repository's callers |
 | `.github/dependabot.yml` | Weekly Actions dependency updates |
@@ -57,11 +58,12 @@ every public, non-archived repository in the organization except `.github`.
 The check validates the catalog, detects generated-profile drift, and
 compares membership with GitHub.
 
-The catalog accepts an optional `mark` object (`path` to a repository file
-and `alt` text) and an optional `quickstart` object (`title` and a list of
-single-line `commands`). Omitted objects produce no markup.
-An optional `mark.dark` path to a repository file selects a dark-mode image
-using `<picture>`; `mark.path` remains the light-mode and fallback image.
+`Scripts/render-profile.py` runs the vendored shared renderer from
+`github-readme-design`, which owns the catalog contract and layout: each
+repository row has a plain-text `outcome` and the `icon` shown in its README
+header, and optional fields cover the website, a quick start, the account
+`description` and the maintainer line. The member dashboard in the private
+`.github-private` repository renders from this catalog at a pinned revision.
 
 Python 3 and its standard library are sufficient for local checks. The public
 membership check uses the GitHub API with optional `GITHUB_TOKEN` read access.
