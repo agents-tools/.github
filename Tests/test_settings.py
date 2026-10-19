@@ -20,7 +20,8 @@ class SettingsTests(unittest.TestCase):
         self.member = self.declaration['repositories'][self.name]
         self.rulesets = settings.expected_rulesets(self.declaration, self.member)
         self.metadata = {**self.declaration['defaults']['repository'], **{
-            key: self.member[key] for key in ('default_branch', 'description', 'topics')}}
+            key: self.member[key] for key in ('default_branch', 'description', 'topics')},
+            'visibility': 'public'}
         self.token = copy.deepcopy(self.declaration['defaults']['workflow_token'])
 
     def get(self, path, *, paginate=False):
@@ -68,6 +69,41 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(len(findings), 5)
         for field in ('allow_merge_commit', 'description', 'topics', 'can_approve_pull_request_reviews', 'enabled'):
             self.assertTrue(any(field + ': expected' in finding for finding in findings), field)
+
+    def test_private_member_profile_reports_its_declared_gap(self):
+        self.name = 'agents-tools/.github-private'
+        self.member = self.declaration['repositories'][self.name]
+        self.metadata.update({key: self.member[key] for key in ('default_branch', 'description', 'topics')},
+                             visibility='private')
+        requested = []
+        def get(path, **kwargs):
+            requested.append(path)
+            return self.get(path, **kwargs)
+        findings = self.check(get)
+        self.assertEqual(findings, [f"GAP {self.name}.rulesets: {self.member['enforcement_gap']}"])
+        self.assertFalse(any('private-vulnerability-reporting' in path or '/rulesets' in path
+                             for path in requested))
+        self.metadata['visibility'] = 'public'
+        self.assertTrue(any('visibility: expected "private"' in finding for finding in self.check()))
+
+    def test_visibility_and_gap_declarations_are_validated(self):
+        for mutation in (lambda m: m.update(visibility='internal'),
+                         lambda m: m.update(enforcement_gap='Plan limitation.'),
+                         lambda m: m.update(visibility='private', enforcement_gap=' ')):
+            value = copy.deepcopy(self.declaration)
+            mutation(value['repositories'][self.name])
+            with self.assertRaises(ValueError):
+                settings.validate_declaration(value)
+
+    def test_public_membership_excludes_declared_private_repositories(self):
+        def get(path, **kwargs):
+            organization = path.split('/')[1]
+            names = [name for name, member in self.declaration['repositories'].items()
+                     if name.startswith(organization + '/') and member.get('visibility', 'public') == 'public']
+            return [[{'full_name': name, 'private': False, 'archived': False} for name in names]
+                    + [{'full_name': organization + '/.github-private', 'private': True, 'archived': False}]]
+        with mock.patch.object(settings, 'check_repository', return_value=[]):
+            self.assertEqual(settings.check_online(self.declaration, get), [])
 
     def test_ruleset_parameters_are_checked_beyond_names(self):
         branch = self.rulesets[0]
