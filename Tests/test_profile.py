@@ -523,6 +523,10 @@ class MembershipTests(unittest.TestCase):
 
 
 class CheckCommandTests(unittest.TestCase):
+    def profile_lines(self, output):
+        return [line for line in output.splitlines()
+                if any(label in line for label in ("catalog validation", "generated profile", "repository membership"))]
+
     def run_checks(self, arguments, *, api_error=None, render_status=0, validation_error=None):
         output = io.StringIO()
         with contextlib.redirect_stdout(output), mock.patch.object(
@@ -533,11 +537,13 @@ class CheckCommandTests(unittest.TestCase):
             checks, "compare_membership"
         ) as compare, mock.patch.object(
             checks, "validate_catalog", side_effect=validation_error
-        ), mock.patch.dict(checks.os.environ, {"GITHUB_TOKEN": "test-token"}):
+        ), mock.patch.object(checks.settings, "check_online", return_value=[]), mock.patch.dict(
+            checks.os.environ, {"GITHUB_TOKEN": "test-token"}
+        ):
             status = checks.main(arguments)
-        self.assertEqual(run.call_count, 1)
+        self.assertEqual(run.call_count, 2)
         self.assertEqual(run.call_args.args[0][-1], "--check")
-        return status, output.getvalue().splitlines(), fetch, compare
+        return status, self.profile_lines(output.getvalue()), fetch, compare
 
     def test_success_prints_one_line_per_check_and_passes_token(self):
         status, lines, fetch, compare = self.run_checks([])
@@ -546,7 +552,7 @@ class CheckCommandTests(unittest.TestCase):
         fetch.assert_called_once_with("agents-tools", "test-token")
         compare.assert_called_once()
 
-    def test_offline_skips_only_membership(self):
+    def test_offline_skips_membership(self):
         status, lines, fetch, compare = self.run_checks(["--offline"])
         self.assertEqual(status, 0)
         self.assertEqual(lines, ["PASS catalog validation", "PASS generated profile", "SKIP repository membership (--offline)"])
@@ -584,11 +590,13 @@ class CheckCommandTests(unittest.TestCase):
         ), mock.patch.object(
             checks, "fetch_repositories",
             side_effect=lambda organization, token: fetch(organization, token, opener=opener),
-        ), mock.patch.object(checks.os, "environ", {"GITHUB_TOKEN": token}):
+        ), mock.patch.object(checks.settings, "check_online", return_value=[]), mock.patch.object(
+            checks.os, "environ", {"GITHUB_TOKEN": token}
+        ):
             status = checks.main([])
         self.assertEqual(status, 1)
         self.assertEqual(error.getvalue(), "")
-        lines = output.getvalue().splitlines()
+        lines = self.profile_lines(output.getvalue())
         self.assertEqual(len(lines), 3)
         return lines[2]
 
