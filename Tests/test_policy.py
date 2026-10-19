@@ -1,6 +1,7 @@
 import os
 import json
-from io import BytesIO
+from contextlib import redirect_stdout
+from io import BytesIO, StringIO
 from pathlib import Path
 import shutil
 import subprocess
@@ -198,6 +199,16 @@ class GitRangeTests(unittest.TestCase):
         return {'repository': {'full_name': 'owner/member'},
                 'pull_request': {'base': {'sha': self.base}, 'head': {'sha': head}, 'title': title}}
 
+    def push_event(self, head, before, branch='topic', **values):
+        return {'repository': {'full_name': 'owner/member', 'default_branch': 'main'},
+                'ref': 'refs/heads/' + branch, 'before': before, 'after': head, **values}
+
+    def check_push(self, event):
+        output = StringIO()
+        with redirect_stdout(output):
+            findings = policy.check(event, 'push')
+        return findings, output.getvalue()
+
     def dependency_update(self):
         (self.root / 'file').write_text('updated dependency\n')
         self.git('config', 'user.name', 'dependabot[bot]')
@@ -247,17 +258,19 @@ class GitRangeTests(unittest.TestCase):
         head = self.commit('fix: update content\n\nGenerated-by: tool')
         event = {'repository': {'full_name': 'owner/member', 'default_branch': 'main'},
                  'ref': 'refs/heads/main', 'before': self.base, 'after': head}
-        findings = policy.check(event, 'push')
+        self.git('update-ref', 'refs/remotes/origin/main', head)
+        findings, output = self.check_push(event)
         self.assertTrue(any(first + ': expected a Conventional Commit subject' in line for line in findings))
         self.assertIn(head + ': forbidden attribution trailer', findings)
         self.assertTrue(any('whitespace error' in line for line in findings))
         self.assertFalse(any('PR title' in line for line in findings))
+        self.assertIn('validating 2 commits in ' + self.base + '..' + head, output)
 
     @mock.patch.dict(os.environ, {'GH_TOKEN': 'test-token'})
     def test_authenticated_dependabot_update_passes_on_pr_push_and_dispatch(self):
         head = self.dependency_update()
         events = ((self.event(head), 'pull_request'),
-                  ({'repository': {'full_name': 'owner/member'}, 'before': self.base, 'after': head}, 'push'),
+                  (self.push_event(head, self.base), 'push'),
                   ({'repository': {'full_name': 'owner/member'}, 'ref': 'main'}, 'workflow_dispatch'))
         for event, name in events:
             with self.subTest(event=name), mock.patch.dict(os.environ, {'GITHUB_SHA': head}), mock.patch.object(
@@ -334,8 +347,99 @@ class GitRangeTests(unittest.TestCase):
     def test_new_branch_does_not_rescan_legacy_ancestors(self):
         (self.root / 'file').write_text('new content\n')
         head = self.commit('fix: update content')
-        event = {'before': policy.ZERO, 'after': head, 'repository': {'default_branch': 'main'}}
+        event = self.push_event(head, policy.ZERO)
         self.assertEqual(policy.check(event, 'push'), [])
+
+    def test_feature_force_push_ignores_missing_before(self):
+        (self.root / 'file').write_text('new content  \n')
+        head = self.commit('Invalid rebased subject')
+        findings, output = self.check_push(self.push_event(head, 'f' * 40))
+        self.assertIn(head + ': expected a Conventional Commit subject (' + policy.TYPES + ')', findings)
+        self.assertTrue(any('whitespace error' in finding for finding in findings))
+        self.assertIn(self.base + '..' + head, output)
+
+    def test_rebased_feature_excludes_commits_already_on_default_branch(self):
+        (self.root / 'file').write_text('published content\n')
+        published = self.commit('Published legacy subject')
+        self.git('update-ref', 'refs/remotes/origin/main', published)
+        (self.root / 'file').write_text('rebased feature content\n')
+        head = self.commit('fix: update feature')
+        findings, output = self.check_push(self.push_event(head, self.base))
+        self.assertEqual(findings, [])
+        self.assertIn(published + '..' + head, output)
+
+    def test_default_force_push_excludes_history_reachable_from_previous_tip(self):
+        (self.root / 'file').write_text('published content\n')
+        published = self.commit('Published legacy subject')
+        (self.root / 'file').write_text('old tip\n')
+        before = self.commit('Old legacy tip')
+        self.git('checkout', '-q', '-b', 'replacement', published)
+        (self.root / 'file').write_text('replacement content  \n')
+        head = self.commit('Invalid replacement subject')
+        self.git('update-ref', 'refs/remotes/origin/main', head)
+        findings, output = self.check_push(self.push_event(head, before, 'main', forced=True))
+        self.assertEqual(sum('Conventional Commit' in finding for finding in findings), 1)
+        self.assertTrue(any(finding.startswith(head + ':') for finding in findings))
+        self.assertTrue(any('whitespace error' in finding for finding in findings))
+        self.assertIn(before + '..' + head, output)
+
+    def test_default_push_fetches_missing_previous_tip(self):
+        remote = ROOT / '.build/test-policy-remote'
+        self.addCleanup(shutil.rmtree, remote)
+        self.git('init', '-q', '--bare', str(remote))
+        self.git('remote', 'add', 'origin', str(remote))
+        before = self.git('commit-tree', 'HEAD^{tree}', '-p', self.base, '-m', 'Old legacy tip')
+        self.git('push', '-q', 'origin', before + ':refs/heads/previous')
+        self.git('update-ref', '-d', 'refs/remotes/origin/previous')
+        self.git('prune', '--expire=now')
+        self.assertNotEqual(subprocess.run(
+            ['git', 'cat-file', '-e', before], capture_output=True).returncode, 0)
+        (self.root / 'file').write_text('replacement content\n')
+        head = self.commit('fix: replace default tip')
+        self.git('update-ref', 'refs/remotes/origin/main', head)
+        findings, output = self.check_push(self.push_event(head, before, 'main', forced=True))
+        self.assertEqual(findings, [])
+        self.assertIn(before + '..' + head, output)
+        self.assertEqual(self.git('rev-parse', before + '^{commit}'), before)
+
+    def test_default_push_without_previous_tip_checks_only_head_and_its_added_lines(self):
+        (self.root / 'file').write_text('older content\n')
+        self.commit('Older legacy subject')
+        (self.root / 'file').write_text('replacement content  \n')
+        head = self.commit('Invalid replacement subject')
+        self.git('update-ref', 'refs/remotes/origin/main', head)
+        for before in ('f' * 40, policy.ZERO):
+            with self.subTest(before=before):
+                findings, output = self.check_push(self.push_event(head, before, 'main'))
+                self.assertEqual(sum('Conventional Commit' in finding for finding in findings), 1)
+                self.assertTrue(any(finding.startswith(head + ':') for finding in findings))
+                self.assertTrue(any('whitespace error' in finding for finding in findings))
+                self.assertIn('only ' + head, output)
+
+    def test_new_default_branch_root_commit_checks_added_lines(self):
+        self.git('checkout', '-q', '--orphan', 'new-default')
+        (self.root / 'file').write_text('root content  \n')
+        head = self.commit('fix: create default branch')
+        findings, output = self.check_push(self.push_event(head, policy.ZERO, 'main'))
+        self.assertTrue(any('whitespace error' in finding for finding in findings))
+        self.assertIn('only ' + head, output)
+
+    def test_branch_deletion_skips_without_accessing_git(self):
+        with mock.patch.object(policy, 'git', side_effect=AssertionError('Git must not run')):
+            findings, output = self.check_push(self.push_event(policy.ZERO, 'f' * 40, deleted=True))
+        self.assertEqual(findings, [])
+        self.assertIn('::notice::', output)
+        self.assertIn('deletion', output)
+        self.assertIn("if: ${{ github.event_name != 'push' || !github.event.deleted }}", generator.render())
+
+    def test_new_orphan_feature_branch_checks_all_its_commits(self):
+        self.git('checkout', '-q', '--orphan', 'orphan-topic')
+        (self.root / 'file').write_text('new root content  \n')
+        head = self.commit('Invalid orphan subject')
+        findings, output = self.check_push(self.push_event(head, policy.ZERO))
+        self.assertTrue(any(finding.startswith(head + ':') for finding in findings))
+        self.assertTrue(any('whitespace error' in finding for finding in findings))
+        self.assertIn(self.base + '..' + head, output)
 
     def test_title_commit_whitespace_and_conflict_failures(self):
         (self.root / 'file').write_text('bad whitespace  \n<<<<<<< branch\n')
@@ -353,7 +457,7 @@ class GitRangeTests(unittest.TestCase):
         self.base = self.commit('chore: update base')
         self.assertEqual(policy.check(self.event(head), 'pull_request'), [])
 
-    def test_new_branch_uses_merge_base_when_default_has_advanced(self):
+    def test_feature_push_checks_commits_against_default_and_added_lines_from_merge_base(self):
         self.git('checkout', '-q', '-b', 'topic')
         (self.root / 'topic').write_text('safe content\n')
         head = self.commit('feat: add content')
@@ -361,9 +465,9 @@ class GitRangeTests(unittest.TestCase):
         (self.root / 'base-only').write_text('independent change\n')
         self.commit('chore: update base')
         self.git('update-ref', 'refs/remotes/origin/main', 'HEAD')
-        event = {'before': policy.ZERO, 'after': head, 'repository': {'default_branch': 'main'}}
+        event = self.push_event(head, policy.ZERO)
         base, _ = policy.source_range(event, 'push')
-        self.assertEqual(base, self.base)
+        self.assertEqual(base, self.git('rev-parse', 'refs/remotes/origin/main'))
         self.assertEqual(policy.check(event, 'push'), [])
 
     def test_consumer_python_modules_cannot_replace_embedded_policy_imports(self):
