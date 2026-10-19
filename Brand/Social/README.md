@@ -28,25 +28,29 @@ Regenerate all three cards after updating their inputs and, when DESIGN changes,
 each recipe's `design_sha256` to the SHA-256 of the final DESIGN.md:
 
 ```sh
+(
 for card in cli core homebrew-tap; do
   .build/social-cards/venv/bin/python "$SOCIAL_SKILL/scripts/render_social.py" \
-    --spec "Brand/Social/$card/recipe.json" --output "Brand/Social/$card/card.svg"
+    --spec "Brand/Social/$card/recipe.json" --output "Brand/Social/$card/card.svg" || exit 1
   rsvg-convert -w 1280 -h 640 "Brand/Social/$card/card.svg" \
-    -o "Brand/Social/$card/card.png"
+    -o "Brand/Social/$card/card.png" || exit 1
 done
+)
 ```
 
 Check the SVGs and layout receipts without rewriting them, then verify that
 each PNG matches a fresh conversion:
 
 ```sh
+(
 for card in cli core homebrew-tap; do
   .build/social-cards/venv/bin/python "$SOCIAL_SKILL/scripts/render_social.py" \
-    --spec "Brand/Social/$card/recipe.json" --output "Brand/Social/$card/card.svg" --check
+    --spec "Brand/Social/$card/recipe.json" --output "Brand/Social/$card/card.svg" --check || exit 1
   rsvg-convert -w 1280 -h 640 "Brand/Social/$card/card.svg" \
-    -o ".build/social-cards/$card.png"
-  cmp "Brand/Social/$card/card.png" ".build/social-cards/$card.png"
+    -o ".build/social-cards/$card.png" || exit 1
+  cmp "Brand/Social/$card/card.png" ".build/social-cards/$card.png" || exit 1
 done
+)
 ```
 
 Review every PNG at full size and at 400 px wide, checking icon edges, text
