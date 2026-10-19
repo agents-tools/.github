@@ -63,10 +63,17 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(generator.render(), (ROOT / '.github/workflows/policy.yml').read_text())
 
     def test_event_ranges_reject_bad_or_unsupported_inputs(self):
-        for event, name in (({}, 'workflow_dispatch'), ({'deleted': True}, 'push'),
+        for event, name in (({}, 'schedule'), ({'deleted': True}, 'push'),
                             ({'before': 'not-a-sha', 'after': 'a' * 40}, 'push')):
             with self.assertRaises((ValueError, KeyError)):
                 policy.source_range(event, name)
+
+    def test_dispatch_requires_a_full_nonzero_github_sha(self):
+        for environment in ({}, {'GITHUB_SHA': ''}, {'GITHUB_SHA': 'not-a-sha'},
+                            {'GITHUB_SHA': 'a' * 39}, {'GITHUB_SHA': policy.ZERO}):
+            with self.subTest(environment=environment), mock.patch.dict(os.environ, environment, clear=True):
+                with self.assertRaises((ValueError, KeyError)):
+                    policy.source_range({}, 'workflow_dispatch')
 
 
 class GeneratedWorkflowTests(unittest.TestCase):
@@ -197,13 +204,63 @@ class GitRangeTests(unittest.TestCase):
         self.git('config', 'user.email', '49699333+dependabot[bot]@users.noreply.github.com')
         return self.commit('chore(deps): bump dependency from 1.0 to 1.1\n\n' + policy.DEPENDABOT_SIGNOFF)
 
+    def dispatch(self, head):
+        event_file = self.root / 'event.json'
+        event_file.write_text(json.dumps({'repository': {'full_name': 'owner/member'},
+                                          'ref': 'main', 'inputs': {}}))
+        self.addCleanup(event_file.unlink, missing_ok=True)
+        command = textwrap.dedent(generator.render().split('        run: |\n', 1)[1])
+        return subprocess.run(
+            ['bash', '-eo', 'pipefail', '-c', command], cwd=self.root,
+            env={**os.environ, 'GITHUB_EVENT_PATH': str(event_file),
+                 'GITHUB_EVENT_NAME': 'workflow_dispatch', 'GITHUB_SHA': head},
+            capture_output=True, text=True,
+        )
+
+    def test_dispatch_validates_selected_head_without_rescanning_history(self):
+        (self.root / 'file').write_text('valid change\n')
+        head = self.commit('fix: update content')
+        (self.root / 'file').write_text('later change\n')
+        self.commit('Invalid later subject')
+        result = self.dispatch(head)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('PASS source policy', result.stdout)
+
+    def test_dispatch_rejects_invalid_subject_on_root_commit(self):
+        result = self.dispatch(self.base)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn(self.base + ': expected a Conventional Commit subject', result.stdout)
+        self.assertNotIn('PR title', result.stdout)
+
+    def test_dispatch_rejects_forbidden_trailers(self):
+        (self.root / 'file').write_text('updated content\n')
+        head = self.commit('fix: update content\n\nGenerated-by: tool')
+        result = self.dispatch(head)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn(head + ': forbidden attribution trailer', result.stdout)
+        self.assertNotIn('PR title', result.stdout)
+
+    def test_default_branch_push_checks_entire_range_without_pr_title(self):
+        (self.root / 'file').write_text('first change\n')
+        first = self.commit('Invalid subject')
+        (self.root / 'file').write_text('second change  \n')
+        head = self.commit('fix: update content\n\nGenerated-by: tool')
+        event = {'repository': {'full_name': 'owner/member', 'default_branch': 'main'},
+                 'ref': 'refs/heads/main', 'before': self.base, 'after': head}
+        findings = policy.check(event, 'push')
+        self.assertTrue(any(first + ': expected a Conventional Commit subject' in line for line in findings))
+        self.assertIn(head + ': forbidden attribution trailer', findings)
+        self.assertTrue(any('whitespace error' in line for line in findings))
+        self.assertFalse(any('PR title' in line for line in findings))
+
     @mock.patch.dict(os.environ, {'GH_TOKEN': 'test-token'})
-    def test_authenticated_dependabot_update_passes_on_pr_and_push(self):
+    def test_authenticated_dependabot_update_passes_on_pr_push_and_dispatch(self):
         head = self.dependency_update()
         events = ((self.event(head), 'pull_request'),
-                  ({'repository': {'full_name': 'owner/member'}, 'before': self.base, 'after': head}, 'push'))
+                  ({'repository': {'full_name': 'owner/member'}, 'before': self.base, 'after': head}, 'push'),
+                  ({'repository': {'full_name': 'owner/member'}, 'ref': 'main'}, 'workflow_dispatch'))
         for event, name in events:
-            with self.subTest(event=name), mock.patch.object(
+            with self.subTest(event=name), mock.patch.dict(os.environ, {'GITHUB_SHA': head}), mock.patch.object(
                 policy, 'urlopen', return_value=github_response(dependabot_metadata(head))
             ) as get:
                 self.assertEqual(policy.check(event, name), [])

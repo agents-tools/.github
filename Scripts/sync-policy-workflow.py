@@ -13,6 +13,7 @@ name: Shared policy
 
 on:
   workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read

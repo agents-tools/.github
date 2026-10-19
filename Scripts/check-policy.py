@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check new commit messages, a PR title and added source lines."""
+"""Check event commit messages, PR titles and added source lines."""
 
 import json
 import os
@@ -101,6 +101,8 @@ def source_range(event, event_name):
     if event_name == "pull_request":
         base = event["pull_request"]["base"]["sha"]
         head = event["pull_request"]["head"]["sha"]
+    elif event_name == "workflow_dispatch":
+        base, head = None, os.environ["GITHUB_SHA"]
     elif event_name == "push" and not event.get("deleted"):
         base, head = event["before"], event["after"]
         if not re.fullmatch(r"[0-9a-f]{40}", head) or head == ZERO:
@@ -112,8 +114,9 @@ def source_range(event, event_name):
             default_head = git("rev-parse", "refs/remotes/origin/" + default).strip()
             base = git("merge-base", default_head, head).strip()
     else:
-        raise ValueError("policy requires a pull_request or non-deletion push")
-    if any(not re.fullmatch(r"[0-9a-f]{40}", value) or value == ZERO for value in (base, head)):
+        raise ValueError("policy requires a pull_request, workflow_dispatch or non-deletion push")
+    commits = (head,) if event_name == "workflow_dispatch" else (base, head)
+    if any(not re.fullmatch(r"[0-9a-f]{40}", value) or value == ZERO for value in commits):
         raise ValueError("policy requires full, nonzero source commit SHAs")
     return base, head
 
@@ -129,7 +132,8 @@ def check(event, event_name):
         comparison = git("merge-base", base, head).strip()
     else:
         comparison = base
-    for commit in git("rev-list", "--reverse", base + ".." + head).splitlines():
+    commits = [head] if base is None else git("rev-list", "--reverse", base + ".." + head).splitlines()
+    for commit in commits:
         # Preserve carriage returns: newline normalization would broaden the
         # exact signoff exception to differently spelled trailer lines.
         message = subprocess.check_output(
@@ -138,6 +142,9 @@ def check(event, event_name):
         dependabot = (DEPENDABOT_SIGNOFF in message.split("\n")
                       and authenticated_dependabot_commit(event["repository"]["full_name"], commit))
         findings.extend(message_findings(commit, message, dependabot=dependabot))
+    if comparison is None:
+        # Dispatch supplies a selected commit but no new-change range.
+        return findings
     paths = git("diff", "--name-only", "--no-renames", "--diff-filter=ACMT", "-z",
                 comparison, head, "--").split("\0")
     for path in filter(None, paths):
