@@ -183,7 +183,7 @@ CLI repositories commit their scripted terminal demo under
 The build job uploads the freshly built executable. Its dependent
 `presentation` job calls the organization's standard at a reviewed full SHA
 with a version comment. This follows the toolchain's
-[member caller contract](https://github.com/showxu/skills/blob/1b72bb9e104586267d0fbdd333df80a26fc81cc0/skills/github-readme-design/references/renderers.md#organization-standard-and-member-caller):
+[member caller contract](https://github.com/showxu/skills/blob/ca4eee1bf838cfa81fa6de3912270c74e47c3e76/skills/github-readme-design/references/renderers.md#organization-standard-and-member-caller):
 
 ```yaml
 jobs:
@@ -244,7 +244,7 @@ recording and both appearances, and commit the files together. Invalid inputs or
 also fail the job; if regeneration produced no files, artifact upload ignores
 the missing directory. Local regeneration uses the same pinned package and
 standard inputs as described in the toolchain's
-[local instructions](https://github.com/showxu/skills/blob/1b72bb9e104586267d0fbdd333df80a26fc81cc0/skills/github-readme-design/references/renderers.md#local-regeneration).
+[local instructions](https://github.com/showxu/skills/blob/ca4eee1bf838cfa81fa6de3912270c74e47c3e76/skills/github-readme-design/references/renderers.md#local-regeneration).
 
 ## Adopt and update pins
 
