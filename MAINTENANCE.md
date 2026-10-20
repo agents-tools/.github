@@ -90,13 +90,13 @@ not assumed. Never add a nonexistent context to a live ruleset.
 
 | Repository | Required contexts after adoption | Release tag format / protection glob |
 | --- | --- | --- |
-| `agents-tools/.github` | `policy / policy`, `check` | None |
+| `agents-tools/.github` | `policy / policy`, `check` | `vX.Y.Z` / `v*` |
 | `agents-tools/core` | `policy / policy`, `validate / swift-package` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
 | `agents-tools/cli` | `policy / policy`, `validate / swift-package`, `smoke`, `presentation / presentation` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
 | `agents-tools/homebrew-tap` | `policy / policy`, `homebrew` | None |
 | `agents-tools/agents-tools.github.io` | `policy / policy`, `site` | None |
 | `agents-tools/.github-private` | `policy / policy`, `check` | None |
-| `skill-cli/.github` | `policy / policy`, `check` | None |
+| `skill-cli/.github` | `policy / policy`, `check` | `vX.Y.Z` / `v*` |
 | `skill-cli/cli` | `policy / policy`, `validate / swift-package`, `smoke`, `presentation / presentation` | `vX.Y.Z` / `v*` |
 | `skill-cli/homebrew-tap` | `policy / policy`, `homebrew` | None |
 | `skill-cli/.github-private` | `policy / policy`, `check` | None |
@@ -226,7 +226,9 @@ adoption remains reported drift, never an implicit exemption.
         "policy / policy",
         "check"
       ],
-      "release_tag_patterns": []
+      "release_tag_patterns": [
+        "refs/tags/v*"
+      ]
     },
     "agents-tools/core": {
       "default_branch": "master",
@@ -314,7 +316,9 @@ adoption remains reported drift, never an implicit exemption.
         "policy / policy",
         "check"
       ],
-      "release_tag_patterns": []
+      "release_tag_patterns": [
+        "refs/tags/v*"
+      ]
     },
     "skill-cli/cli": {
       "default_branch": "master",
