@@ -236,9 +236,11 @@ standard's Action pin; members select them through their single standard pin.
 Organization DESIGN lint uses that same Action and parser.
 
 Any drift fails the job. The failure artifact `presentation-terminal` holds
-commit-ready `script.yml`, optional `fixture/`, `recording.json` and both SVGs
-when regeneration succeeds. Download it, review the recording and both
-appearances, and commit the files together. Invalid inputs or failed commands
+`presentation-terminal.tar`, an archive of the commit-ready `script.yml`,
+optional `fixture/`, `recording.json` and both SVGs that preserves file modes
+and dotfiles, when regeneration succeeds. Extract it with
+`tar -xf presentation-terminal.tar -C .github/assets/terminal`, review the
+recording and both appearances, and commit the files together. Invalid inputs or failed commands
 also fail the job; if regeneration produced no files, artifact upload ignores
 the missing directory. Local regeneration uses the same pinned package and
 standard inputs as described in the toolchain's
