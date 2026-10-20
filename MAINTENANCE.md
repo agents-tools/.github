@@ -101,24 +101,24 @@ not assumed. Never add a nonexistent context to a live ruleset.
 | `skill-cli/homebrew-tap` | `policy / policy`, `homebrew` | None |
 | `skill-cli/.github-private` | `policy / policy`, `check` | None |
 
-The 2026-10-19 audits observed `Swift Package` and
-`validate-commit-messages` in core, `Swift CLI` and
-`validate-commit-messages` in both CLIs, and no check contexts in either tap.
-The table defines their replacement interfaces. The CLIs retain executable
-smoke validation in a member-owned `smoke` job; taps supply a member-owned
-`homebrew` job for formula validation, installation and tests. Their commands
-belong in the members. `.github` uses `check` for its Python validation.
-Both CLIs also require `presentation / presentation` to re-record their
-terminal scripts against their freshly built executable and compare the
-recording and both SVGs. Each organization pins the toolchain Action in its
-presentation workflow; DESIGN and fonts come from that standard at
-`job.workflow_sha`. Core and the taps have no terminal demo. Both standards
-repositories exercise their presentation workflow against a small executable
-fixture in CI; those self-tests do not replace a CLI re-recording on its own
-build runner for the member adoption run.
-The [integration guide](Documentation/Reference/WorkflowIntegration.md)
-defines caller names and the rollout gate. Shared Swift automation still
-needs a representative member run before rollout.
+The 2026-10-19 audits observed `Swift Package` and `validate-commit-messages`
+in core, `Swift CLI` and `validate-commit-messages` in both CLIs, and no check
+contexts in either tap. The table defines their replacement interfaces. The
+CLIs retain executable smoke validation in a member-owned `smoke` job; taps
+supply a member-owned `homebrew` job for formula validation, installation and
+tests. Their commands belong in the members. `.github` uses `check` for its
+Python validation. Both CLIs also require `presentation / presentation` to
+re-record their terminal scripts against their freshly built executable and
+compare the recording, both SVGs and their social preview. Each organization
+pins the toolchain Action in its presentation workflow; DESIGN and fonts come
+from that standard at `job.workflow_sha`. Core and the taps have no terminal
+demo. Both standards repositories check their own social preview and public
+profile through local reusable workflow calls. The tool path requires a real
+CLI consumer run at the candidate standard commit on its own build runner
+before adoption. The [integration
+guide](Documentation/Reference/WorkflowIntegration.md) defines caller names and
+the rollout gate. Shared Swift automation still needs a representative member
+run before rollout.
 
 Each organization's private `.github-private` repository holds its member
 dashboard. It is declared with `"visibility": "private"` and follows the same
@@ -464,7 +464,8 @@ observed conformance, 1 means drift/local validation failure, and 2 means an
 unknown observation (with any drift still printed).
 
 `--offline` validates local sources without network access. `--public` adds
-public catalog membership but skips administrative settings; this is the
+public catalog membership and repository About comparison but skips
+administrative settings; this is the
 read-only workflow-token CI mode. Neither mode claims live settings conformity.
 The settings check does not prove App activation, commit signatures throughout
 history, effective issue-template rendering or consumer installation; those

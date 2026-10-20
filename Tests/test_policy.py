@@ -11,7 +11,7 @@ import unittest
 from unittest import mock
 from urllib.error import URLError
 
-from test_profile import ROOT, load_script
+from test_check import ROOT, load_script
 
 
 policy = load_script('policy', 'check-policy.py')

@@ -1,11 +1,12 @@
 # Workflow integration
 
-Members call reusable workflows at a reviewed **full 40-character commit
-SHA** with a `# vX.Y.Z` comment. `agents-tools/.github` supplies family policy
-and Swift CI; each organization's `.github` supplies presentation with its own
-DESIGN and fonts. `skill-cli/.github` adopts family maintenance and versioning
-by reference and owns its organization values. Workflows and Dependabot
-configuration are not inherited from community defaults.
+Members call reusable workflows at a reviewed **full 40-character commit SHA**
+with a `# vX.Y.Z` comment. `agents-tools/.github` supplies family policy and
+Swift CI; each organization's `.github` supplies presentation and profile
+checks with its own DESIGN, fonts and catalog. `skill-cli/.github` adopts
+family maintenance and versioning by reference and owns its organization
+values. Workflows and Dependabot configuration are not inherited from community
+defaults.
 
 ## Interfaces
 
@@ -13,7 +14,8 @@ configuration are not inherited from community defaults.
 | --- | --- | --- |
 | `policy.yml` | None; handles `pull_request`, `push` and `workflow_dispatch` events | `policy` / `policy / policy` |
 | `swift-package-ci.yml` | Required string `runner`; optional `package-directory` (default `.`), `format-configuration` (default `.swift-format`) | `swift-package` / `validate / swift-package` |
-| `presentation.yml` | Optional string `runner` (default `ubuntu-24.04`); required strings `executable-artifact`, `executable-path`; optional string `assets` (default `.github/assets`) | `presentation` / `presentation / presentation` |
+| `presentation.yml` | Strings `runner` (default `ubuntu-24.04`), `executable-artifact` and `executable-path` (default empty; required only for tools), `assets` (default `.github/assets`) | `presentation` / `presentation / presentation` |
+| `profile.yml` | Strings `mode` (default `public`, or `member`), `member` (default `profile/member.json`), `output` (default `profile/README.md`) | `profile` / `check / profile` for a member dashboard |
 
 All require only `contents: read`, accept no caller secrets, and expose no outputs.
 They use one sequential job each: any failed step fails the required context.
@@ -143,47 +145,68 @@ jobs:
       format-configuration: .swift-format
 ```
 
-Keep caller job IDs `policy`, `validate` and `presentation`, and omit a custom
-job `name` if using the declared contexts. The workflow display names are not status-check
-names. CLI validation also defines a local `smoke` job, and each tap defines a
-local `homebrew` job; each must execute its actual repository-owned checks and
-fail on failure. Do not create a placeholder passing job to activate rules.
+Keep caller job IDs `policy`, `validate`, `presentation` and member-profile
+`check`, and omit a custom job `name` if using the declared contexts. The
+workflow display names are not status-check names. CLI validation also defines
+a local `smoke` job, and each tap defines a local `homebrew` job; each must
+execute its actual repository-owned checks and fail on failure. Do not create a
+placeholder passing job to activate rules.
 
 The standards repositories use local `check` jobs and the reusable policy
-workflow for their own checks; neither is a Swift package. Each uploads
-`Tests/Fixtures/Presentation/demo` in a `presentation-fixture` job, then calls
-its own presentation workflow with that artifact and the fixture assets.
-Relative self-calls test the candidate implementation; external members use
-full pins. Standards' push triggers cover all branches to validate proposed
-shared changes before a PR; member callers above cover the default branch and
-PRs.
+workflow for their own checks; neither is a Swift package. Each calls its own
+presentation and profile workflows with default inputs to check its
+organization preview and public profile. Relative self-calls test the candidate
+implementation; external members use full pins. Standards' required contexts
+remain `policy / policy` and `check`. Standards' push triggers cover all
+branches to validate proposed shared changes before a PR; member callers above
+cover the default branch and PRs.
 
 Callers and callees both declare concurrency. Reusable groups have distinct
-`shared-policy-` / `shared-swift-ci-` / `shared-presentation-` prefixes because
-`github.workflow` is the caller's name inside a reusable workflow. Reusing the caller's group would
-cancel the caller itself. Use each reusable workflow at most once per caller;
-separate workflow names keep independent validation runs apart. See GitHub's
-[reuse contract](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows)
-and [concurrency contract](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
+`shared-policy-`, `shared-swift-ci-`, `shared-presentation-` and
+`shared-profile-` prefixes because `github.workflow` is the caller's name
+inside a reusable workflow. Reusing the caller's group would cancel the caller
+itself. Use each reusable workflow at most once per caller; separate workflow
+names keep independent validation runs apart. See GitHub's [reuse
+contract](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows)
+and [concurrency
+contract](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
 
-## Presentation caller
+## Presentation callers
 
-CLI repositories commit their scripted terminal demo under
-`.github/assets/terminal/`:
+The standard's catalog selects the expected assets for each caller:
+
+| Catalog kind | Checked asset directories | Executable inputs |
+| --- | --- | --- |
+| `tool` | `terminal`, `social-preview` | Both required |
+| `library`, `app`, `distribution` | `social-preview` | Both rejected |
+| Organization `.github` (implicit kind `organization`) | `social-preview` | Both rejected |
+| `website` | None; calling the workflow fails with `kind website has no presentation assets` | Not applicable |
+
+The caller owner must exactly match `organization.login`; any repository other
+than `.github` must be in the catalog. Missing expected directories and a
+terminal directory for a kind without terminal fail. Repository entries
+require `kind`, `title` and `about` after `icon`; `about` equals the live
+repository description. The organization declares its `.github` repository
+About in `organization.about`.
+
+A tool commits these assets under its asset root:
 
 ```text
-.github/assets/terminal/
-├── script.yml
-├── fixture/              # optional source files copied into the sandbox
-├── recording.json        # generated transcript for review
-├── terminal-light.svg
-└── terminal-dark.svg
+.github/assets/
+├── terminal/
+│   ├── script.yml
+│   ├── fixture/              # optional source files copied into the sandbox
+│   ├── recording.json        # generated transcript for review
+│   ├── terminal-light.svg
+│   └── terminal-dark.svg
+└── social-preview/
+    └── social-preview.png
 ```
 
 The build job uploads the freshly built executable. Its dependent
 `presentation` job calls the organization's standard at a reviewed full SHA
-with a version comment. This follows the toolchain's
-[member caller contract](https://github.com/showxu/skills/blob/ca4eee1bf838cfa81fa6de3912270c74e47c3e76/skills/github-readme-design/references/renderers.md#organization-standard-and-member-caller):
+with a version comment. This follows the toolchain's [member caller
+contract](https://github.com/showxu/skills/blob/e5a50c34bf66264a436288f96e44db9caa305912/skills/github-readme-design/references/renderers.md#organization-standard-and-member-caller):
 
 ```yaml
 jobs:
@@ -210,41 +233,94 @@ and tag. skill-cli members use
 executable path. `runner` must match the OS that built the executable; its
 default is `ubuntu-24.04`. `executable-path` is relative to the uploaded
 artifact and cannot be absolute or contain `..`. `assets` defaults to
-`.github/assets`; the workflow reads its `terminal/` subdirectory.
+`.github/assets` and must be caller-relative without `..` segments.
 
-With caller job ID `presentation` and no caller `name` override, the exact
-required context is **`presentation / presentation`**. It runs on the caller's
-event commit, including the test merge commit on PRs. Core and the taps have
-no terminal demo and do not require this context.
+A library such as core calls without executable inputs; apps and distributions
+use the same form:
+
+```yaml
+jobs:
+  presentation:
+    uses: agents-tools/.github/.github/workflows/presentation.yml@0000000000000000000000000000000000000000 # vX.Y.Z
+```
+
+With caller job ID `presentation` and no caller `name` override, the context
+is **`presentation / presentation`**. Core and the taps have no terminal demo;
+this workflow checks their social previews. Their existing required-context
+declarations remain unchanged until member adoption passes its real-run gate.
 
 The workflow validates GitHub's `job.workflow_sha`, then checks out the caller
 under `caller/` and its own organization's `.github` under `standard/` at that
 exact SHA, without persisted credentials. The SHA identifies the executing
-reusable job, including relative self-calls, as documented in GitHub's
-[`job` context](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#job-context).
-An absent or invalid job SHA fails before checkout, preventing a default-branch
-fallback. This interface targets GitHub.com, where that workflow identity is
-available.
+reusable job, including relative self-calls, as documented in GitHub's [`job`
+context](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#job-context).
+An absent or invalid SHA fails before checkout. The caller checkout uses the
+event commit, including the test merge commit on PRs. This interface targets
+GitHub.com, where that workflow identity is available.
 
-After downloading `executable-artifact` into the runner's temporary directory,
-the workflow validates `executable-path` and restores its execute bit. The
-pinned toolchain Action records `script.yml` against this executable in a fresh
-sandbox, then renders and compares the recording and both SVGs byte for byte.
-DESIGN and fonts come from `standard/DESIGN.md` and `standard/Brand/Fonts` at
-`job.workflow_sha`. The Action and its locked parser version come from the
-standard's Action pin; members select them through their single standard pin.
+`Scripts/presentation-inputs.py` runs from the pinned standard and resolves
+kind, catalog selector and local icon. The icon is the entry's light-page URL
+(or the organization's `mark` for `.github`). It must be
+`https://raw.githubusercontent.com/<organization>/<repository>/HEAD/<path>`:
+`.github` resolves in `standard/`, and a member's own repository resolves in
+`caller/`. Other hosts, owners, repositories and refs, queries, fragments,
+absolute paths, `..` segments and missing files fail with the URL named.
+
+For a tool, the workflow downloads `executable-artifact`, validates the path
+and restores its execute bit. The pinned toolchain records the terminal
+script against that executable in a fresh sandbox, then compares the recording
+and both SVGs byte for byte. For every accepted kind it renders and compares
+the social preview PNG. DESIGN, fonts and catalog come from
+`standard/DESIGN.md`, `standard/Brand/Fonts` and `standard/profile/catalog.json`
+at `job.workflow_sha`. The standard's Action pin selects the toolchain and its
+locked parser; members select all these inputs through their standard pin.
 Organization DESIGN lint uses that same Action and parser.
 
-Any drift fails the job. The failure artifact `presentation-terminal` holds
-`presentation-terminal.tar`, an archive of the commit-ready `script.yml`,
-optional `fixture/`, `recording.json` and both SVGs that preserves file modes
-and dotfiles, when regeneration succeeds. Extract it with
-`tar -xf presentation-terminal.tar -C .github/assets/terminal`, review the
-recording and both appearances, and commit the files together. Invalid inputs or failed commands
-also fail the job; if regeneration produced no files, artifact upload ignores
-the missing directory. Local regeneration uses the same pinned package and
-standard inputs as described in the toolchain's
-[local instructions](https://github.com/showxu/skills/blob/ca4eee1bf838cfa81fa6de3912270c74e47c3e76/skills/github-readme-design/references/renderers.md#local-regeneration).
+Any drift fails the job. Failure artifact `presentation` holds
+`presentation.tar`, with regenerated `terminal/` and/or `social-preview/`
+subdirectories laid out like the asset root. The tar preserves file modes and
+hidden files. Extract it with `tar -xf presentation.tar -C .github/assets`,
+review and commit the files together. Invalid inputs or failed commands also
+fail; when no files were generated, archival and upload skip the absent output.
+Local regeneration uses the same pinned package and standard inputs as
+described in the toolchain's [local
+instructions](https://github.com/showxu/skills/blob/e5a50c34bf66264a436288f96e44db9caa305912/skills/github-readme-design/references/renderers.md#local-regeneration).
+Uploading the social preview in GitHub Settings remains manual.
+
+## Profile callers
+
+The profile workflow uses the same caller and pinned-standard checkout
+contract. It validates `mode` (`public` or `member`) and the full
+`job.workflow_sha` before any checkout. `member` and `output` are relative
+paths in the caller, without `..` segments; they cannot escape that checkout.
+The default `output` is `profile/README.md`.
+
+Public mode uses only the standard's DESIGN and catalog. The organization's
+own CI calls the workflow locally with no inputs. A `.github-private` member
+dashboard calls from a job named `check`:
+
+```yaml
+jobs:
+  check:
+    uses: agents-tools/.github/.github/workflows/profile.yml@0000000000000000000000000000000000000000 # vX.Y.Z
+    with:
+      mode: member
+```
+
+skill-cli dashboards use `skill-cli/.github/.github/workflows/profile.yml`.
+Replace the zeros and version comment with the accepted standard commit and
+tag. Member mode reads `profile/member.json` by default and supplies
+`job.workflow_sha` as `catalog-revision`; public mode supplies neither member
+input nor catalog revision to the Action. Member JSON keeps `maintenance` and
+`repositories`; remove its `catalog` binding. The single workflow pin selects
+DESIGN, catalog and toolchain together.
+
+The Action validates the catalog and compares generated Markdown bytes with
+the caller's output. On drift, artifact `profile` contains the regenerated
+Markdown file; copy it to the declared output path, review and commit it. An
+absent artifact directory is skipped. The member context is **`check / profile`**.
+Update the member's maintenance declaration and live ruleset for that context
+only after it has appeared and passed on a real run under the activation gate.
 
 ## Adopt and update pins
 
@@ -254,24 +330,30 @@ standard inputs as described in the toolchain's
    A newer default SHA is an update observation, not permission to repin.
 2. Prepare a representative consumer PR using the proposed full SHA, including
    a Swift member for Swift changes and a CLI re-recording against its freshly
-   built executable on its own build runner for presentation changes. Preserve
-   its local smoke/release checks.
+   built executable on its own build runner for presentation changes affecting
+   tools. The organization preview self-call cannot prove the tool path. Cover
+   the social-preview and profile paths with their real callers at the same
+   candidate commit, including a member dashboard for member-mode changes.
+   Preserve local smoke/release checks.
    Inspect the real run at that exact candidate; do not claim consumer proof
    from static YAML checks or from a different pin. Before a broader wave,
    inspect current runner capacity and bound concurrent macOS jobs accordingly.
-3. Read the check names with
-   `gh api repos/OWNER/REPO/commits/HEAD_SHA/check-runs --paginate --jq '.check_runs[] | {name, conclusion, app: .app.id}'`.
-   Require `policy / policy` plus the member's validation contexts listed in
-   [MAINTENANCE](../../MAINTENANCE.md#activation-and-required-checks). Record the
-   actual names, app IDs, run URL, accepted head and shared SHA in the adoption
-   PR. Do not apply its ruleset until all required contexts have appeared on
-   real runs and passed. Update the declaration if actual names differ.
-4. After representative acceptance, advance the remaining callers through
-   their own reviewed PRs. Compare every `uses: agents-tools/.github/...@SHA`
-   in each member with the accepted pin and report path, observed SHA and
-   proposed SHA. Include each organization's presentation workflow in this
-   comparison. Resolve unavailable refs as unknown; do not auto-repin or
-   fail a consumer solely because the shared default branch advanced.
+3. Read the check names with `gh api
+   repos/OWNER/REPO/commits/HEAD_SHA/check-runs --paginate --jq '.check_runs[]
+   | {name, conclusion, app: .app.id}'`. Require `policy / policy` plus the
+   member's validation contexts listed in
+   [MAINTENANCE](../../MAINTENANCE.md#activation-and-required-checks). Record
+   the actual names, app IDs, run URL, accepted head and shared SHA in the
+   adoption PR. Do not apply its ruleset until all required contexts have
+   appeared on real runs and passed. Update the declaration if actual names
+   differ.
+4. After representative acceptance, advance the remaining callers through their
+   own reviewed PRs. Compare every `uses: agents-tools/.github/...@SHA` in each
+   member with the accepted pin and report path, observed SHA and proposed SHA.
+   Include each organization's presentation workflow in this comparison, along
+   with profile workflow callers. Resolve unavailable refs as unknown; do not
+   auto-repin or fail a consumer solely because the shared default branch
+   advanced.
 5. Create signed, annotated standard tags only after this consumer gate and
    the owner's confirmation of each tag, under [VERSIONING](../../VERSIONING.md).
    Keep full SHA pins with their `# vX.Y.Z` comments; tags are never moved.
@@ -280,7 +362,9 @@ standard inputs as described in the toolchain's
    verified. Read back settings with `python3 Scripts/check`; it never applies
    them. Dependabot's weekly Actions PRs use this same review and consumer gate.
 
-`python3 Scripts/check --offline` checks local catalog, declaration and
-generated files. CI uses `--public` to add public membership without attempting
+`python3 Scripts/check --offline` reads catalog membership fields and checks
+the declaration and generated policy. The profile workflow owns catalog
+validation and generated-profile comparison. CI uses `--public` to compare
+public membership and repository About descriptions without attempting
 administrative reads with its read-only token. Maintainers run the default
 online check with their existing `gh` read access to both organizations.

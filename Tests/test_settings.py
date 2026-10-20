@@ -7,7 +7,7 @@ import subprocess
 import unittest
 from unittest import mock
 
-from test_profile import ROOT, checks
+from test_check import ROOT, checks
 
 
 settings = checks.settings
@@ -205,6 +205,7 @@ class CheckModesTests(unittest.TestCase):
             checks.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0)
         ), mock.patch.object(checks, 'fetch_repositories', return_value=[]) as membership, mock.patch.object(
             checks, 'compare_membership'
+        ), mock.patch.object(checks, 'compare_about'
         ), mock.patch.object(settings, 'check_online', return_value=list(findings)) as online:
             result = checks.main(arguments)
         return result, output.getvalue(), membership, online
