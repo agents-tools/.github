@@ -7,7 +7,7 @@
 | [agents-tools/homebrew-tap](https://github.com/agents-tools/homebrew-tap) | [homebrew-tap/card.png](homebrew-tap/card.png) | homebrew-tap |
 
 Each directory keeps its `recipe.json`, outlined `card.svg`, 1280×640
-`card.png` and `card.layout.json` receipt. Recipes resolve visual tokens from
+`card.png` and `card.layout.json` receipt. Recipes copy the card colors from
 the front matter in [DESIGN.md](../../DESIGN.md), bind to that file by SHA-256
 and use the licensed faces in
 [Brand/Fonts](../Fonts/OFL.txt). The core icon and its source commit/digest
@@ -26,8 +26,9 @@ python3 -m venv .build/social-cards/venv
 ```
 
 When DESIGN.md changes, follow the [design procedure](../../README.md#change-the-design)
-to lint it with zero errors and zero warnings and update every recipe's
-`design_sha256` to the SHA-256 of the final file. Regenerate all three cards
+to lint it with zero errors and zero warnings, copy changed values into the
+recipes and update every recipe's `design_sha256` to the SHA-256 of the final
+file. Regenerate all three cards
 after updating their inputs:
 
 ```sh
