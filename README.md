@@ -31,11 +31,11 @@ CODEOWNERS, workflows, and repository-specific development instructions.
 | `profile/catalog.json` | Promise, account description, navigation, repository groups, outcomes and icons for the profile |
 | `profile/README.md` | Organization profile generated from the catalog |
 | `profile/assets/` | Organization avatar and profile mark |
-| `DESIGN.md` | Brand colors, the agents app icon entry and framework logo entries |
+| `DESIGN.md` | Visual tokens in Google's DESIGN.md format, the app icon entry and framework logo entries |
 | `Brand/Icon/` | App icon layer artwork |
 | `Brand/Exports/agents/` | Icon Composer document generated from the app icon entry |
 | [`Brand/Social/`](Brand/Social/README.md) | Repository social cards, recipes, layout receipts and regeneration commands |
-| `Brand/Profile/recipe.json` | Profile tokens resolved from DESIGN.md |
+| `Brand/Profile/recipe.json` | Profile render values and the DESIGN.md digest binding |
 | `Scripts/` | Profile/policy generators, [vendored renderers](Scripts/vendor/README.md) and read-only repository/settings checks |
 | `Tests/` | Profile, policy, settings and presentation tests and fixtures |
 | `.github/workflows/` | Shared policy, Swift CI and presentation checks, plus this repository's callers |
@@ -94,6 +94,26 @@ Before handoff, run the offline and online checks, unit tests, `actionlint`
 (or parse every workflow as YAML when unavailable), and `git diff --check
 origin/master`. Member settings activation and workflow pin rollouts require
 the real consumer evidence described in the integration guide.
+
+## Change the design
+
+`DESIGN.md` stores visual tokens in Google's DESIGN.md front matter and icon
+entries in Iconography. Read it before visual or asset work. After editing it,
+run:
+
+```sh
+npx --yes @google/design.md@0.4.0 lint DESIGN.md
+```
+
+Require zero errors and zero warnings. The lint command exits 0 when it reports
+only warnings, so check both counts; CI enforces both.
+
+Update `design_sha256` in `Brand/Profile/recipe.json` and every
+`Brand/Social/*/recipe.json` to the SHA-256 of the final `DESIGN.md`, then run
+`python3 Scripts/render-profile.py` and regenerate the
+[social cards](Brand/Social/README.md). Follow the icon procedures below for
+changed entries or artwork. Commit `DESIGN.md`, recipes, sources and outputs
+together.
 
 ## Change the Icons
 
