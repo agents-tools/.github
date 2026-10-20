@@ -1,6 +1,6 @@
 # agents-tools/.github
 
-Organization profile and shared engineering and community standards for
+Organization profile, brand and shared standards for
 [agents-tools](https://github.com/agents-tools). This repository owns the
 reusable workflows for the agents family; `skill-cli` adopts the standard by
 reference with its own organization values.
@@ -28,58 +28,54 @@ CODEOWNERS, workflows, and repository-specific development instructions.
 | `Documentation/Reference/WorkflowIntegration.md` | Reusable workflow interfaces, caller pins and required contexts |
 | `.github/ISSUE_TEMPLATE/` | Bug and feature templates, plus security reporting guidance |
 | `.github/pull_request_template.md` | Change summary, validation, and documentation prompts |
-| `profile/catalog.json` | Promise, account description, navigation, repository groups, outcomes and icons for the profile |
+| `profile/catalog.json` | Profile content, repository kinds, titles, About descriptions and icons |
+| `.github/assets/social-preview/social-preview.png` | Organization repository social preview |
 | `profile/README.md` | Organization profile generated from the catalog |
 | `profile/assets/` | Organization avatar and profile mark |
 | `DESIGN.md` | Visual tokens in Google's DESIGN.md format, the app icon entry and framework logo entries |
 | `Brand/Icon/` | App icon layer artwork |
 | `Brand/Exports/agents/` | Icon Composer document generated from the app icon entry |
-| [`Brand/Social/`](Brand/Social/README.md) | Repository social cards, recipes, layout receipts and regeneration commands |
-| `Brand/Profile/recipe.json` | Profile render values and the DESIGN.md digest binding |
-| `Scripts/` | Profile/policy generators, [vendored profile renderer](Scripts/vendor/README.md) and read-only repository/settings checks |
-| `Tests/` | Profile, policy, settings and presentation tests and fixtures |
-| `.github/workflows/` | Shared policy, Swift CI and presentation checks, plus this repository's callers |
+| `Scripts/` | Presentation input resolver, policy generator and read-only repository/settings checks |
+| `Tests/` | Workflow, input resolver, policy, settings and repository metadata tests |
+| `.github/workflows/` | Shared policy, Swift CI, presentation and profile checks, plus this repository's callers |
 | `.github/dependabot.yml` | Weekly Actions dependency updates |
 | `AGENTS.md` | Repository-specific agent guide |
 | `LICENSE` | Repository license |
 
-## Change the Profile
+## Change the profile
 
-Edit `profile/catalog.json`, then regenerate the profile and run the checks:
+Edit `profile/catalog.json`, then regenerate `profile/README.md` with the
+pinned toolchain using the commands below. Commit the catalog and generated
+README together. The catalog lists every public, non-archived repository of
+the organization except `.github`. Each entry declares its `kind`, `title`,
+verbatim repository `about`, plain-text `outcome` and README header `icon`.
+The organization also declares its own `.github` repository's `about`.
+Marks and icons may select light and dark images.
+
+The profile workflow owns catalog validation and compares the generated
+profile byte for byte. `Scripts/check` reads membership fields and compares
+membership and every `about` with GitHub in online and public modes; it lists
+all description differences together. Offline mode skips these live checks.
+The private `.github-private` dashboard uses the catalog and DESIGN at its
+pinned profile workflow revision, with operational values in
+`profile/member.json`.
+
+The policy and settings checks use Python 3 and its standard library.
+Public membership and About checks use the GitHub API with optional
+`GITHUB_TOKEN` read access. Run:
 
 ```sh
-python3 Scripts/render-profile.py
-python3 -m unittest discover -s Tests
+python3 -B -m unittest discover -s Tests -v
+python3 Scripts/check --offline
+python3 Scripts/check --public
 python3 Scripts/check
 ```
 
-Commit the catalog and generated README together. The catalog must list
-every public, non-archived repository in the organization except `.github`.
-The check validates the catalog, detects generated-profile drift, and
-compares membership with GitHub.
-
-`Scripts/render-profile.py` runs the vendored shared renderer from
-`github-readme-design`, which owns the catalog contract and layout: each
-repository row has a plain-text `outcome` and the `icon` shown in its README
-header, and optional fields cover the website, a quick start, the account
-`description` and the maintainer line. The member dashboard in the private
-`.github-private` repository renders from this catalog at a pinned revision.
-
-The profile, policy and settings checks use Python 3 and its standard library.
-The public membership check uses the GitHub API with optional `GITHUB_TOKEN` read access.
-The full online check also needs an authenticated `gh` session that can read
-the declared repositories' settings in both organizations:
-
-```sh
-python3 Scripts/check
-```
-
-For local work without GitHub access, `python3 Scripts/check --offline`
-validates local files and skips all network reads. CI runs
-`python3 Scripts/check --public` with its read-only token: local checks and
-public membership, without administrative settings. Run the default check
-before handoff and report settings drift and unavailable observations; it
-never mutates GitHub. See [Maintenance](MAINTENANCE.md#read-only-verification).
+The default online mode also needs an authenticated `gh` session that can
+read declared repository settings across both organizations. CI uses
+`--public` with its read-only token and skips administrative settings. Run the
+default check before handoff and report drift and unavailable observations;
+it never mutates GitHub. See [Maintenance](MAINTENANCE.md#read-only-verification).
 
 ## Change the Standard
 
@@ -95,31 +91,54 @@ Before handoff, run the offline and online checks, unit tests, `actionlint`
 origin/master`. Member settings activation and workflow pin rollouts require
 the real consumer evidence described in the integration guide.
 
-## Change the design
+## Change the design and regenerate assets
 
-`DESIGN.md` stores visual tokens in Google's DESIGN.md front matter and icon
-entries in Iconography. Read it before visual or asset work. After editing it,
-use the toolchain at `ca4eee1bf838cfa81fa6de3912270c74e47c3e76` (`v0.1.0`) in
-`.build/presentation-toolchain`, obtained using its
-[local regeneration instructions](https://github.com/showxu/skills/blob/ca4eee1bf838cfa81fa6de3912270c74e47c3e76/skills/github-readme-design/references/renderers.md#local-regeneration). Use the Node version in the
-copied `.node-version`, then run:
+`DESIGN.md` owns the visual tokens in Google's DESIGN.md front matter and the
+icon entries. Read it before visual or asset work. The same pinned TypeScript
+toolchain lints DESIGN and renders profiles, social previews and terminals. Use
+the package at `e5a50c34bf66264a436288f96e44db9caa305912` (`v0.2.0`) in the
+ignored `.build/presentation-toolchain`, following its [local regeneration
+contract](https://github.com/showxu/skills/blob/e5a50c34bf66264a436288f96e44db9caa305912/skills/github-readme-design/references/renderers.md#local-regeneration):
 
 ```sh
+toolchain_commit='e5a50c34bf66264a436288f96e44db9caa305912' # v0.2.0
 toolchain_dir="$PWD/.build/presentation-toolchain"
+mkdir -p "$toolchain_dir"
+curl -fsSL "https://api.github.com/repos/showxu/skills/tarball/$toolchain_commit" \
+  -o "$toolchain_dir/source.tar.gz"
+archive_root="$(tar -tzf "$toolchain_dir/source.tar.gz" | sed -n '1s,/.*,,p')"
+tar -xzf "$toolchain_dir/source.tar.gz" -C "$toolchain_dir" --strip-components=4 \
+  "$archive_root/skills/github-readme-design/scripts"
+tar -xzf "$toolchain_dir/source.tar.gz" -C "$toolchain_dir" --strip-components=1 \
+  "$archive_root/LICENSE"
+node --version # Must match the copied .node-version; use that runtime below.
+npm ci --ignore-scripts --omit=dev --prefix "$toolchain_dir"
 node "$toolchain_dir/src/cli.ts" design lint --design DESIGN.md
+node "$toolchain_dir/src/cli.ts" profile render \
+  --design DESIGN.md --catalog profile/catalog.json --out profile/README.md
+node "$toolchain_dir/src/cli.ts" profile check \
+  --design DESIGN.md --catalog profile/catalog.json --out profile/README.md
+node "$toolchain_dir/src/cli.ts" social-preview render \
+  --design DESIGN.md --fonts Brand/Fonts --catalog profile/catalog.json \
+  --repository .github --icon profile/assets/icon.png \
+  --out .github/assets/social-preview/social-preview.png
+node "$toolchain_dir/src/cli.ts" social-preview check \
+  --design DESIGN.md --fonts Brand/Fonts --catalog profile/catalog.json \
+  --repository .github --icon profile/assets/icon.png \
+  --assets .github/assets/social-preview
 ```
 
-Require zero errors and zero warnings. CI calls the same pinned Action for
-DESIGN lint and terminal checks, so both use its locked parser version.
+DESIGN lint requires zero errors and zero warnings. The icon above is the
+catalog mark's light-page image. Public profile commands omit member input and
+catalog revision. These commands generate the organization's own assets;
+members keep their previews in their own `.github/assets/social-preview/`.
+Uploading the PNG in GitHub Settings remains a separate manual step.
 
-The profile and social card recipes copy their values from `DESIGN.md`.
-Copy every changed value into `Brand/Profile/recipe.json` and each
-`Brand/Social/*/recipe.json` that uses it, set each recipe's `design_sha256`
-to the SHA-256 of the final `DESIGN.md`, then run
-`python3 Scripts/render-profile.py` and regenerate the
-[social cards](Brand/Social/README.md). Follow the icon procedures below for
-changed entries or artwork. Commit `DESIGN.md`, recipes, sources and outputs
-together.
+Regenerate every output that reads changed DESIGN tokens or icon artwork,
+review the outputs, and commit sources and outputs together. CI's local
+`presentation` and `profile` calls check the organization's preview and public
+profile. Reuse the package directory for a pin, replace its contents when
+changing pins, and remove download and dependency outputs when finished.
 
 ## Change the Icons
 
