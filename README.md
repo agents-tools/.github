@@ -163,7 +163,7 @@ python3 "$DESIGN_ICONS" DESIGN.md --out .build/logos --name core --png
 
 The generators write only new output directories, so remove the previous
 `.build` outputs first. Copy `core.svg` and `core.png` to
-`Documentation/Assets/Logo.svg` and `Logo.png` in agents-tools/core, then
-check them from this repository with
-`python3 "$DESIGN_ICONS" DESIGN.md --check "core=<core checkout>/Documentation/Assets/Logo.svg"`.
+`.github/assets/logo/logo.svg` and `.github/assets/logo/logo.png` in
+agents-tools/core, then check them from this repository with
+`python3 "$DESIGN_ICONS" DESIGN.md --check "core=<core checkout>/.github/assets/logo/logo.svg"`.
 The organization avatar on GitHub is uploaded from `profile/assets/avatar.png`.
