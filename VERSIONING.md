@@ -1,63 +1,157 @@
 # Versioning
 
+## Tags
+
+Versions use SemVer 2.0.0. Release tags are signed and annotated, named
+`vX.Y.Z`, with the message `agents-tools/.github X.Y.Z`. A tagged version is never
+moved, reused or decreased.
+
+## Choosing the next version
+
+### 0.x (initial development)
+
+Anything may change at any time, without deprecation windows or a release
+cadence. Breaking changes (removing or incompatibly changing a documented
+interface) bump MINOR; everything else bumps PATCH.
+
+Minor-bounded dependency ranges such as `"0.1.1"..<"0.2.0"` and caret semantics
+treat `0.MINOR` as the boundary, so automatic updates never pull a breaking
+change.
+
+### 1.0.0
+
+Release `1.0.0` when the owner decides the interface is stable and
+compatibility is promised.
+
+### 1.0 and later
+
+Change an interface by adding the new form compatibly, keeping the old form
+working and deprecating it. Remove the old form only in a planned major.
+
+Breaking changes appear only in planned majors, on a roughly yearly cadence
+like platform releases. A major may also mark a significant feature release.
+Never cut a major because of a single change.
+
+New features, including value or output changes consumers absorb without
+changing their usage (such as regenerating outputs), bump MINOR. Fixes bump
+PATCH.
+
+Reset less significant components to zero when bumping MAJOR or MINOR.
+Version numbers never tagged or published to users do not constrain the first
+release, which may start at `0.1.0`.
+
+## Version source
+
+The version source is the Git tag.
+
+Files that mirror it:
+
+- None.
+
+Update the source and its mirrors together in the release PR.
+
+## Changelog
+
+Keep `CHANGELOG.md` with `## Unreleased` first, followed by `## X.Y.Z`
+sections newest first. Describe what each version ships. Every breaking change
+includes instructions for upgrading.
+From `1.0` onward, record deprecations in the changelog and list a planned
+major's removals beforehand.
+
+## Release procedure
+
+1. Choose the next version using the rules above.
+2. Prepare a release PR that sets the version source and its mirrors, moves
+   the Unreleased entries into the new `## X.Y.Z` section, and leaves an empty
+   `## Unreleased` section at the top.
+3. Run the repository checks and complete the ecosystem release preparation
+   below. Resolve review findings before accepting the PR.
+4. Squash merge the accepted release PR.
+5. Create the signed annotated tag with the name and message above on the
+   accepted merge commit.
+6. Publish the tag and verify that the remote tag's peeled commit equals the
+   accepted merge commit.
+
+For each release tag, verify that the version source at its commit matches the
+tag's version and that `CHANGELOG.md` at that commit has the matching section.
+
+Repository checks:
+
+```sh
+python3 -m unittest discover -s Tests
+python3 Scripts/check --offline
+python3 Scripts/check
+actionlint
+git diff --check origin/master
+```
+
+Use the local signing configuration and verify the signature and exact commit
+locally. Before publishing release assets, verify the remote annotated tag's
+peeled commit; `--verify-tag` alone proves existence, not the intended commit.
+The [maintenance declaration](MAINTENANCE.md#activation-and-required-checks)
+owns each protection glob and live activation gate.
+
+Ecosystem builds, packages, stores and consumer installation checks belong to
+the release owners and checklists in the [members table](#members).
+
+## Family release order
+
 The agents family releases in dependency order: **core → both CLIs → both
 Homebrew taps**. Each releasing repository has its own version. A change
 releases only the affected dependency chain; versions need not match across
 repositories.
+
+Both `.github` standards release independently, starting at `v0.1.0`. They
+publish signed, annotated SemVer tags `vX.Y.Z` on the default branch after a
+reviewed merge that changes a consumed interface or output. Create each
+standard tag only after the
+[consumer real-run gate](Documentation/Reference/WorkflowIntegration.md#adopt-and-update-pins)
+passes and the owner confirms that tag. Consumers pin the full commit SHA with
+a `# vX.Y.Z` comment so Dependabot proposes upgrades.
+
+## Members
 
 | Repository | Version source | Release tag | Release owner/checklist |
 | --- | --- | --- | --- |
 | `agents-tools/.github` | Git tag | `vX.Y.Z` | This policy and the [consumer real-run gate](Documentation/Reference/WorkflowIntegration.md#adopt-and-update-pins) |
 | `agents-tools/core` | Git tag | `X.Y.Z` | [Core release checklist](https://github.com/agents-tools/core/blob/master/Documentation/Reference/Release.md) |
 | `agents-tools/cli` | `BuildInfo.version` in `Sources/CLI/EntryPoint.swift` | `X.Y.Z` | [agents release checklist](https://github.com/agents-tools/cli/blob/master/Documentation/Reference/Release.md) |
+| `skill-cli/.github` | Git tag | `vX.Y.Z` | [Standard README](https://github.com/skill-cli/.github/blob/master/README.md) and the [consumer real-run gate](Documentation/Reference/WorkflowIntegration.md#adopt-and-update-pins) |
 | `skill-cli/cli` | `BuildInfo.version` in `Sources/CLI/EntryPoint.swift` | `vX.Y.Z` | [skill release checklist](https://github.com/skill-cli/cli/blob/master/Documentation/Reference/Release.md) |
 | `agents-tools/homebrew-tap` | Upstream CLI version in each formula | None of its own | [agents tap](https://github.com/agents-tools/homebrew-tap#readme); formula validation in the agents checklist |
 | `skill-cli/homebrew-tap` | Upstream CLI version in each formula | None of its own | [skill tap](https://github.com/skill-cli/homebrew-tap#readme); formula validation in the skill checklist |
 
-Both `.github` repositories publish signed, annotated SemVer tags `vX.Y.Z`
-on the default branch after a reviewed merge that changes a consumed interface
-or output. A reusable workflow interface break increments MAJOR; a DESIGN
-change requiring members to regenerate increments MINOR; a change preserving
-member output increments PATCH. Consumers pin the full commit SHA with a
-`# vX.Y.Z` comment so Dependabot proposes upgrades.
+Do not introduce a duplicate version declaration into core or a tap. Every
+releasing member (core, both CLIs and both `.github` standards) maintains
+`CHANGELOG.md` under the common changelog policy above.
 
-Create each standard tag only after the
-[consumer real-run gate](Documentation/Reference/WorkflowIntegration.md#adopt-and-update-pins)
-passes and the owner confirms that tag. Tags are immutable and never moved.
-Do not introduce a duplicate version declaration into core or a tap.
+## Documented interfaces
 
-## Choosing versions
+The family's documented interfaces are:
 
-Core and both CLIs follow [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
-Compatible fixes increment PATCH; compatible functionality increments MINOR.
-Breaking changes increment MAJOR from `1.0.0`, and MINOR during `0.x`.
-Reset lower components when a higher component increases. Breaking changes
-include incompatible public API, CLI flags/output/exit codes, declared file
-formats or locations, and raised toolchain/platform requirements that exclude
-existing consumers. Member checklists own the supported compatibility surface
-and exact version validation. No new prerelease convention is introduced here.
+- Public library API.
+- CLI commands, flags, exit codes and documented machine-readable output.
+  Human-readable output is not an interface.
+- Declared file formats and locations.
+- Supported toolchain and platform requirements, including requirements whose
+  increase would exclude existing consumers.
+- For both `.github` standards, reusable workflow inputs, outputs and caller
+  context names, and the DESIGN token names renderers read.
+
+A DESIGN value change that members absorb by regenerating is not breaking.
+Member checklists own the supported compatibility surface and exact version
+validation. Prerelease conventions remain member-owned.
+
+## Dependency rules
 
 During development a CLI may follow core's development branch as its member
 policy permits. Before release, it selects a published core version and updates
-its manifest and lockfile together. During core `0.x`, use the member's
-minor-bounded dependency range; from `1.x`, compatible ranges stop at the next
-major. Follow the linked checklists for resolution and migration validation.
+its manifest and lockfile together. During core `0.x`, members depend on core
+with a minor-bounded range; from core `1.x`, compatible ranges stop at the
+next major. Follow the linked checklists for resolution and migration
+validation.
 
-## Notes and publication
-
-Every releasing member (core and both CLIs) maintains `CHANGELOG.md` with an
-`Unreleased` section. At release preparation, move the shipped changes into a
-versioned section and retain `Unreleased` for subsequent work. Notes explain
-behavior changes and migration steps. Taps document formula changes, selected
-upstream release, archive digest and validation in their PRs; they do not
-publish an independent CLI changelog or release version.
-
-All new release tags are signed, annotated and immutable. Use the local signing
-configuration, verify the signature and exact commit locally, then verify the
-remote annotated tag's peeled commit before publishing. `--verify-tag` alone
-proves existence, not the intended commit. The
-[maintenance declaration](MAINTENANCE.md#activation-and-required-checks) owns
-each protection glob and live activation gate.
+## Family publication
 
 Published commits, tags and release assets are never rewritten or replaced.
 A tagged mistake requires a new patch or the larger compatibility bump.
@@ -69,6 +163,10 @@ of running or queued releases. Development CI is not release validation.
 The linked member checklists own build, executable smoke, artifact, signature,
 consumer and tap installation checks. Release core first; update and validate
 each CLI against it; publish both CLI releases before the coordinated tap
-updates. Record the source commits, core pin, release identities, archive
-digests and installation results in the release handoff. Publishing any
-release or tap update requires its normal maintainer authorization.
+updates. Taps document formula changes, selected upstream release, archive
+digest and validation in their PRs; they do not publish an independent CLI
+changelog or release version.
+
+Record the source commits, core pin, release identities, archive digests and
+installation results in the release handoff. Publishing any release or tap
+update requires its normal maintainer authorization.
