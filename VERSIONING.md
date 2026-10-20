@@ -7,15 +7,24 @@ repositories.
 
 | Repository | Version source | Release tag | Release owner/checklist |
 | --- | --- | --- | --- |
+| `agents-tools/.github` | Git tag | `vX.Y.Z` | This policy and the [consumer real-run gate](Documentation/Reference/WorkflowIntegration.md#adopt-and-update-pins) |
 | `agents-tools/core` | Git tag | `X.Y.Z` | [Core release checklist](https://github.com/agents-tools/core/blob/master/Documentation/Reference/Release.md) |
 | `agents-tools/cli` | `BuildInfo.version` in `Sources/CLI/EntryPoint.swift` | `X.Y.Z` | [agents release checklist](https://github.com/agents-tools/cli/blob/master/Documentation/Reference/Release.md) |
 | `skill-cli/cli` | `BuildInfo.version` in `Sources/CLI/EntryPoint.swift` | `vX.Y.Z` | [skill release checklist](https://github.com/skill-cli/cli/blob/master/Documentation/Reference/Release.md) |
 | `agents-tools/homebrew-tap` | Upstream CLI version in each formula | None of its own | [agents tap](https://github.com/agents-tools/homebrew-tap#readme); formula validation in the agents checklist |
 | `skill-cli/homebrew-tap` | Upstream CLI version in each formula | None of its own | [skill tap](https://github.com/skill-cli/homebrew-tap#readme); formula validation in the skill checklist |
 
-The two `.github` repositories publish standards at commit SHAs and have no
-product release sequence. A workflow pin is a source revision, not a product
-version. Do not introduce a duplicate version declaration into core or a tap.
+Both `.github` repositories publish signed, annotated SemVer tags `vX.Y.Z`
+on the default branch after a reviewed merge that changes a consumed interface
+or output. A reusable workflow interface break increments MAJOR; a DESIGN
+change requiring members to regenerate increments MINOR; a change preserving
+member output increments PATCH. Consumers pin the full commit SHA with a
+`# vX.Y.Z` comment so Dependabot proposes upgrades.
+
+Create each standard tag only after the
+[consumer real-run gate](Documentation/Reference/WorkflowIntegration.md#adopt-and-update-pins)
+passes and the owner confirms that tag. Tags are immutable and never moved.
+Do not introduce a duplicate version declaration into core or a tap.
 
 ## Choosing versions
 

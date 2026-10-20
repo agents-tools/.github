@@ -72,8 +72,11 @@ and any social card; catalog summaries may give additional context.
   `refs/tags/[0-9]*.[0-9]*.[0-9]*` covers unprefixed `X.Y.Z` tags. It is a
   GitHub fnmatch protection glob, not a SemVer validator; the member's release
   checklist validates the exact version. `skill-cli/cli` uses `refs/tags/v*`.
-  Taps, standards repositories, the website and the member profiles have no release tags of
-  their own.
+  Both standards repositories publish signed SemVer tags `vX.Y.Z` under
+  [VERSIONING.md](VERSIONING.md), after the consumer real-run gate and owner
+  confirmation. Taps, the website and the member profiles have no release tags
+  of their own. Tag protection activation follows the declaration and gate
+  below.
 
 ### Activation and required checks
 
@@ -105,11 +108,14 @@ The table defines their replacement interfaces. The CLIs retain executable
 smoke validation in a member-owned `smoke` job; taps supply a member-owned
 `homebrew` job for formula validation, installation and tests. Their commands
 belong in the members. `.github` uses `check` for its Python validation.
-Both CLIs also require `presentation / presentation` to verify their committed
-Quick look SVGs against their recording and recipe using the pinned shared
-renderer. Core and the taps have no recording. This repository exercises the
-presentation workflow against a small test fixture in CI; that self-test does
-not replace the member adoption run.
+Both CLIs also require `presentation / presentation` to re-record their
+terminal scripts against their freshly built executable and compare the
+recording and both SVGs. Each organization pins the toolchain Action in its
+presentation workflow; DESIGN and fonts come from that standard at
+`job.workflow_sha`. Core and the taps have no terminal demo. Both standards
+repositories exercise their presentation workflow against a small executable
+fixture in CI; those self-tests do not replace a CLI re-recording on its own
+build runner for the member adoption run.
 The [integration guide](Documentation/Reference/WorkflowIntegration.md)
 defines caller names and the rollout gate. Shared Swift automation still
 needs a representative member run before rollout.

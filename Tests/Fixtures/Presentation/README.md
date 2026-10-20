@@ -1,13 +1,35 @@
 # Presentation fixture
 
-`record.json` captures the successful stdout and exit code of
-`printf 'Presentation fixture\n'` using the POSIX shell's `printf` builtin.
-It has no product executable, dependencies or path normalization. The empty
-recipe selects the renderer's neutral defaults; this fixture has no DESIGN
-binding.
+`demo` is an executable POSIX shell fixture. `terminal/script.yml` runs one
+hidden setup command that writes `message.txt`, then shows `demo hello` and
+`demo read message.txt`. Its expectation checks the complete file content.
 
-Both SVGs are generated with the renderer whose upstream revision and digests
-are recorded in [Scripts/vendor/README.md](../../../Scripts/vendor/README.md).
-The repository's CI calls the reusable presentation workflow against these
-inputs and exports at the candidate revision. This fixture proves the shared
-check runs; member adoption still requires the actual member's recording.
+CI uploads `demo` as `presentation-fixture` and calls this repository's
+reusable presentation workflow on `ubuntu-24.04`. The workflow downloads the
+executable, restores its execute bit, re-records the script and compares
+`terminal/recording.json`, `terminal/terminal-light.svg` and
+`terminal/terminal-dark.svg` byte for byte. Regenerated files are uploaded as
+`presentation-terminal` on drift. This self-test exercises the workflow;
+member adoption requires a real CLI build and re-recording on its build OS.
+
+Generate from the repository root with Node 24.22.0 and the toolchain at
+`1b72bb9e104586267d0fbdd333df80a26fc81cc0` (`v0.1.0`), obtained in
+`.build/presentation-toolchain` using its [local regeneration instructions](https://github.com/showxu/skills/blob/1b72bb9e104586267d0fbdd333df80a26fc81cc0/skills/github-readme-design/references/renderers.md#local-regeneration):
+
+```sh
+toolchain_dir="$PWD/.build/presentation-toolchain"
+node "$toolchain_dir/src/cli.ts" terminal record \
+  --script Tests/Fixtures/Presentation/terminal/script.yml \
+  --executable Tests/Fixtures/Presentation/demo \
+  --out Tests/Fixtures/Presentation/terminal/recording.json
+node "$toolchain_dir/src/cli.ts" terminal render \
+  --recording Tests/Fixtures/Presentation/terminal/recording.json \
+  --design DESIGN.md --fonts Brand/Fonts \
+  --out-dir Tests/Fixtures/Presentation/terminal
+node "$toolchain_dir/src/cli.ts" terminal check \
+  --assets Tests/Fixtures/Presentation/terminal --design DESIGN.md \
+  --fonts Brand/Fonts --executable Tests/Fixtures/Presentation/demo
+```
+
+Each repository supplies its own `DESIGN.md` and `Brand/Fonts`.
+Commit the script, executable, recording and both SVGs together.
