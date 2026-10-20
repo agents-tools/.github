@@ -222,7 +222,7 @@ change, which renderers merge over the base.
 | `owner` | The organization login, `agents-tools` |
 | `title` | The repository's README title: `agents` for cli, `core` for core, `homebrew-tap` for the tap |
 | `about` | The repository's About sentence, which is also its README tagline, complete and unchanged |
-| `icon` | Tools: the agents app icon, `profile/assets/icon.png` (512 px PNG). Libraries: their framework logo SVG, for core `Documentation/Assets/Logo.svg` in agents-tools/core |
+| `icon` | Tools: the agents app icon, `profile/assets/icon.png` (512 px PNG). Libraries: their framework logo SVG, for core `.github/assets/logo/logo.svg` in agents-tools/core |
 
 Cards are rendered by `github-readme-design`'s `render_social.py`, which embeds
 raster icons byte for byte. Each card recipe copies the `social-preview-*`
@@ -439,5 +439,5 @@ The website maps its roles to tokens and defines no colors or faces of its own.
 | Icon Composer document | `Brand/Exports/agents/agents.icon` |
 | Organization avatar, 1024 px | `profile/assets/avatar.png` |
 | Profile mark, 512 px | `profile/assets/icon.png` |
-| Core framework logo | `Documentation/Assets/Logo.svg` and `Logo.png` in agents-tools/core |
+| Core framework logo | `.github/assets/logo/logo.svg` and `.github/assets/logo/logo.png` in agents-tools/core |
 | Card fonts | `Brand/Fonts/` (static faces instantiated by `Brand/Fonts/instantiate.py`) |

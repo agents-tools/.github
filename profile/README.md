@@ -17,13 +17,13 @@ agents skills list
 <h2>Use agents</h2>
 
 <table>
-<tr><td><img src="https://raw.githubusercontent.com/agents-tools/cli/HEAD/Documentation/Assets/Logo.png" width="40" height="40" alt="cli icon"></td><td><strong><a href="https://github.com/agents-tools/cli">cli</a></strong><br>The agents command: add skills and instructions from local paths, Git repositories or well-known indexes, write them for each agent, restore them from the lock and watch sources for changes.</td></tr>
+<tr><td><img src="https://raw.githubusercontent.com/agents-tools/cli/HEAD/.github/assets/logo/logo.png" width="40" height="40" alt="cli icon"></td><td><strong><a href="https://github.com/agents-tools/cli">cli</a></strong><br>The agents command: add skills and instructions from local paths, Git repositories or well-known indexes, write them for each agent, restore them from the lock and watch sources for changes.</td></tr>
 </table>
 
 <h2>Build on it</h2>
 
 <table>
-<tr><td><img src="https://raw.githubusercontent.com/agents-tools/core/HEAD/Documentation/Assets/Logo.svg" width="40" height="40" alt="core icon"></td><td><strong><a href="https://github.com/agents-tools/core">core</a></strong><br>Swift library behind agents and skill: sources, declaration, lock, cache, skills and instructions.</td></tr>
+<tr><td><img src="https://raw.githubusercontent.com/agents-tools/core/HEAD/.github/assets/logo/logo.svg" width="40" height="40" alt="core icon"></td><td><strong><a href="https://github.com/agents-tools/core">core</a></strong><br>Swift library behind agents and skill: sources, declaration, lock, cache, skills and instructions.</td></tr>
 </table>
 
 <h2>Install</h2>
