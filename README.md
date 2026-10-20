@@ -36,7 +36,7 @@ CODEOWNERS, workflows, and repository-specific development instructions.
 | `Brand/Exports/agents/` | Icon Composer document generated from the app icon entry |
 | [`Brand/Social/`](Brand/Social/README.md) | Repository social cards, recipes, layout receipts and regeneration commands |
 | `Brand/Profile/recipe.json` | Profile render values and the DESIGN.md digest binding |
-| `Scripts/` | Profile/policy generators, [vendored renderers](Scripts/vendor/README.md) and read-only repository/settings checks |
+| `Scripts/` | Profile/policy generators, [vendored profile renderer](Scripts/vendor/README.md) and read-only repository/settings checks |
 | `Tests/` | Profile, policy, settings and presentation tests and fixtures |
 | `.github/workflows/` | Shared policy, Swift CI and presentation checks, plus this repository's callers |
 | `.github/dependabot.yml` | Weekly Actions dependency updates |
@@ -65,8 +65,8 @@ header, and optional fields cover the website, a quick start, the account
 `description` and the maintainer line. The member dashboard in the private
 `.github-private` repository renders from this catalog at a pinned revision.
 
-Python 3 and its standard library are sufficient for local checks. The public
-membership check uses the GitHub API with optional `GITHUB_TOKEN` read access.
+The profile, policy and settings checks use Python 3 and its standard library.
+The public membership check uses the GitHub API with optional `GITHUB_TOKEN` read access.
 The full online check also needs an authenticated `gh` session that can read
 the declared repositories' settings in both organizations:
 
@@ -99,14 +99,18 @@ the real consumer evidence described in the integration guide.
 
 `DESIGN.md` stores visual tokens in Google's DESIGN.md front matter and icon
 entries in Iconography. Read it before visual or asset work. After editing it,
-run:
+use the toolchain at `ca4eee1bf838cfa81fa6de3912270c74e47c3e76` (`v0.1.0`) in
+`.build/presentation-toolchain`, obtained using its
+[local regeneration instructions](https://github.com/showxu/skills/blob/ca4eee1bf838cfa81fa6de3912270c74e47c3e76/skills/github-readme-design/references/renderers.md#local-regeneration). Use the Node version in the
+copied `.node-version`, then run:
 
 ```sh
-npx --yes @google/design.md@0.4.0 lint DESIGN.md
+toolchain_dir="$PWD/.build/presentation-toolchain"
+node "$toolchain_dir/src/cli.ts" design lint --design DESIGN.md
 ```
 
-Require zero errors and zero warnings. The lint command exits 0 when it reports
-only warnings, so check both counts; CI enforces both.
+Require zero errors and zero warnings. CI calls the same pinned Action for
+DESIGN lint and terminal checks, so both use its locked parser version.
 
 The profile and social card recipes copy their values from `DESIGN.md`.
 Copy every changed value into `Brand/Profile/recipe.json` and each

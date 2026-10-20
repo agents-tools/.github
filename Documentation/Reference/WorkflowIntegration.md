@@ -1,10 +1,11 @@
 # Workflow integration
 
-Members of both organizations call workflows in `agents-tools/.github` at a
-reviewed **full 40-character commit SHA**. `skill-cli/.github` adopts the shared
-standard by reference and supplies its own organization values; it does not
-fork the workflow implementation. Workflows and Dependabot configuration are
-not inherited from community defaults.
+Members call reusable workflows at a reviewed **full 40-character commit
+SHA** with a `# vX.Y.Z` comment. `agents-tools/.github` supplies family policy
+and Swift CI; each organization's `.github` supplies presentation with its own
+DESIGN and fonts. `skill-cli/.github` adopts family maintenance and versioning
+by reference and owns its organization values. Workflows and Dependabot
+configuration are not inherited from community defaults.
 
 ## Interfaces
 
@@ -12,7 +13,7 @@ not inherited from community defaults.
 | --- | --- | --- |
 | `policy.yml` | None; handles `pull_request`, `push` and `workflow_dispatch` events | `policy` / `policy / policy` |
 | `swift-package-ci.yml` | Required string `runner`; optional `package-directory` (default `.`), `format-configuration` (default `.swift-format`) | `swift-package` / `validate / swift-package` |
-| `presentation.yml` | Optional strings `record`, `recipe`, `output-directory` (defaults below) | `presentation` / `presentation / presentation` |
+| `presentation.yml` | Optional string `runner` (default `ubuntu-24.04`); required strings `executable-artifact`, `executable-path`; optional string `assets` (default `.github/assets`) | `presentation` / `presentation / presentation` |
 
 All require only `contents: read`, accept no caller secrets, and expose no outputs.
 They use one sequential job each: any failed step fails the required context.
@@ -111,7 +112,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   policy:
-    uses: agents-tools/.github/.github/workflows/policy.yml@0000000000000000000000000000000000000000
+    uses: agents-tools/.github/.github/workflows/policy.yml@0000000000000000000000000000000000000000 # vX.Y.Z
 ```
 
 ## Swift caller
@@ -135,7 +136,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   validate:
-    uses: agents-tools/.github/.github/workflows/swift-package-ci.yml@0000000000000000000000000000000000000000
+    uses: agents-tools/.github/.github/workflows/swift-package-ci.yml@0000000000000000000000000000000000000000 # vX.Y.Z
     with:
       runner: macos-26
       package-directory: .
@@ -149,12 +150,13 @@ local `homebrew` job; each must execute its actual repository-owned checks and
 fail on failure. Do not create a placeholder passing job to activate rules.
 
 The standards repositories use local `check` jobs and the reusable policy
-workflow for their own checks; neither is a Swift package. This repository
-also calls presentation against `Tests/Fixtures/Presentation` so the context
-appears on a real CI run. It uses relative calls so a candidate tests its own
-implementation; external members must use full pins. Its push triggers cover all branches to
-validate proposed shared changes before a PR; member callers above cover the
-default branch and PRs.
+workflow for their own checks; neither is a Swift package. Each uploads
+`Tests/Fixtures/Presentation/demo` in a `presentation-fixture` job, then calls
+its own presentation workflow with that artifact and the fixture assets.
+Relative self-calls test the candidate implementation; external members use
+full pins. Standards' push triggers cover all branches to validate proposed
+shared changes before a PR; member callers above cover the default branch and
+PRs.
 
 Callers and callees both declare concurrency. Reusable groups have distinct
 `shared-policy-` / `shared-swift-ci-` / `shared-presentation-` prefixes because
@@ -166,49 +168,83 @@ and [concurrency contract](https://docs.github.com/en/actions/how-tos/write-work
 
 ## Presentation caller
 
-Both CLI repositories commit their Quick look inputs and exports in
-`Documentation/Assets/Demo/`: `record.json`, `recipe.json`, `Demo-light.svg`
-and `Demo-dark.svg`. Add this job to the validation caller shown above, using
-the same reviewed full SHA as its other shared workflows. The paths below are
-the defaults and are relative to the caller checkout:
+CLI repositories commit their scripted terminal demo under
+`.github/assets/terminal/`:
 
-```yaml
-  presentation:
-    uses: agents-tools/.github/.github/workflows/presentation.yml@0000000000000000000000000000000000000000
-    with:
-      record: Documentation/Assets/Demo/record.json
-      recipe: Documentation/Assets/Demo/recipe.json
-      output-directory: Documentation/Assets/Demo
+```text
+.github/assets/terminal/
+├── script.yml
+├── fixture/              # optional source files copied into the sandbox
+├── recording.json        # generated transcript for review
+├── terminal-light.svg
+└── terminal-dark.svg
 ```
 
-Replace the 40 zeros with the accepted shared commit. With caller job ID
-`presentation` and no caller `name` override, the exact required context is
-**`presentation / presentation`**. It runs on the caller's event commit,
-including the test merge commit on PRs. Core and the taps have no recording
-and do not require this context.
+The build job uploads the freshly built executable. Its dependent
+`presentation` job calls the organization's standard at a reviewed full SHA
+with a version comment. This follows the toolchain's
+[member caller contract](https://github.com/showxu/skills/blob/ca4eee1bf838cfa81fa6de3912270c74e47c3e76/skills/github-readme-design/references/renderers.md#organization-standard-and-member-caller):
 
-The workflow checks out the caller under `caller/` and `agents-tools/.github`
-under `standard/`. The latter's ref is GitHub's `job.workflow_sha`: the commit
-that defines the executing reusable job, including for a relative self-call.
-GitHub documents this in the
+```yaml
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      # Check out and build the product here.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: executable
+          path: .build/release/agents
+  presentation:
+    needs: build
+    uses: agents-tools/.github/.github/workflows/presentation.yml@0000000000000000000000000000000000000000 # vX.Y.Z
+    with:
+      runner: macos-26
+      executable-artifact: executable
+      executable-path: agents
+```
+
+Replace the 40 zeros and version comment with the accepted standard commit
+and tag. skill-cli members use
+`skill-cli/.github/.github/workflows/presentation.yml` and their own built
+executable path. `runner` must match the OS that built the executable; its
+default is `ubuntu-24.04`. `executable-path` is relative to the uploaded
+artifact and cannot be absolute or contain `..`. `assets` defaults to
+`.github/assets`; the workflow reads its `terminal/` subdirectory.
+
+With caller job ID `presentation` and no caller `name` override, the exact
+required context is **`presentation / presentation`**. It runs on the caller's
+event commit, including the test merge commit on PRs. Core and the taps have
+no terminal demo and do not require this context.
+
+The workflow validates GitHub's `job.workflow_sha`, then checks out the caller
+under `caller/` and its own organization's `.github` under `standard/` at that
+exact SHA, without persisted credentials. The SHA identifies the executing
+reusable job, including relative self-calls, as documented in GitHub's
 [`job` context](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#job-context).
-`github.workflow_sha` describes the caller and is not used for the standard
-checkout. No input selects a separate renderer revision. An absent or invalid
-job SHA fails before checkout, preventing checkout's default-branch fallback.
-This interface targets GitHub.com; the job workflow identity fields are not
-available on GitHub Enterprise Server.
+An absent or invalid job SHA fails before checkout, preventing a default-branch
+fallback. This interface targets GitHub.com, where that workflow identity is
+available.
 
-Python 3.13 runs `standard/Scripts/vendor/render_terminal.py` with `--record`,
-`--spec`, `--output-dir` and `--check`. The renderer and its sibling dependency
-come from the same standard commit as the pinned workflow; their original
-upstream commit, digests and license are recorded in
-[vendor provenance](../../Scripts/vendor/README.md). Python ignores Python
-environment variables and user site packages, and imports from the trusted
-renderer directory. Caller inputs are passed as quoted arguments through
-environment variables. The renderer never executes recorded commands or
-rewrites outputs in check mode. Missing or stale SVGs, invalid recordings and
-stale recipe DESIGN bindings fail the job. Regenerate with the pinned copy,
-review both themes, and commit the inputs and exports together.
+After downloading `executable-artifact` into the runner's temporary directory,
+the workflow validates `executable-path` and restores its execute bit. The
+pinned toolchain Action records `script.yml` against this executable in a fresh
+sandbox, then renders and compares the recording and both SVGs byte for byte.
+DESIGN and fonts come from `standard/DESIGN.md` and `standard/Brand/Fonts` at
+`job.workflow_sha`. The Action and its locked parser version come from the
+standard's Action pin; members select them through their single standard pin.
+Organization DESIGN lint uses that same Action and parser.
+
+Any drift fails the job. The failure artifact `presentation-terminal` holds
+`presentation-terminal.tar`, an archive of the commit-ready `script.yml`,
+optional `fixture/`, `recording.json` and both SVGs that preserves file modes
+and dotfiles, when regeneration succeeds. Extract it with
+`tar -xf presentation-terminal.tar -C .github/assets/terminal`, review the
+recording and both appearances, and commit the files together. Invalid inputs or failed commands
+also fail the job; if regeneration produced no files, artifact upload ignores
+the missing directory. Local regeneration uses the same pinned package and
+standard inputs as described in the toolchain's
+[local instructions](https://github.com/showxu/skills/blob/ca4eee1bf838cfa81fa6de3912270c74e47c3e76/skills/github-readme-design/references/renderers.md#local-regeneration).
 
 ## Adopt and update pins
 
@@ -217,8 +253,9 @@ review both themes, and commit the inputs and exports together.
    revision with `gh api repos/agents-tools/.github/commits/master --jq .sha`.
    A newer default SHA is an update observation, not permission to repin.
 2. Prepare a representative consumer PR using the proposed full SHA, including
-   a Swift member for Swift changes and a CLI recording for presentation
-   changes. Preserve its local smoke/release checks.
+   a Swift member for Swift changes and a CLI re-recording against its freshly
+   built executable on its own build runner for presentation changes. Preserve
+   its local smoke/release checks.
    Inspect the real run at that exact candidate; do not claim consumer proof
    from static YAML checks or from a different pin. Before a broader wave,
    inspect current runner capacity and bound concurrent macOS jobs accordingly.
@@ -232,9 +269,13 @@ review both themes, and commit the inputs and exports together.
 4. After representative acceptance, advance the remaining callers through
    their own reviewed PRs. Compare every `uses: agents-tools/.github/...@SHA`
    in each member with the accepted pin and report path, observed SHA and
-   proposed SHA. Resolve unavailable refs as unknown; do not auto-repin or
+   proposed SHA. Include each organization's presentation workflow in this
+   comparison. Resolve unavailable refs as unknown; do not auto-repin or
    fail a consumer solely because the shared default branch advanced.
-5. Change related caller pins together. A renamed required job updates the
+5. Create signed, annotated standard tags only after this consumer gate and
+   the owner's confirmation of each tag, under [VERSIONING](../../VERSIONING.md).
+   Keep full SHA pins with their `# vX.Y.Z` comments; tags are never moved.
+6. Change related caller pins together. A renamed required job updates the
    maintenance declaration and live ruleset only after its new context is
    verified. Read back settings with `python3 Scripts/check`; it never applies
    them. Dependabot's weekly Actions PRs use this same review and consumer gate.
