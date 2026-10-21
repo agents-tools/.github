@@ -96,12 +96,12 @@ the real consumer evidence described in the integration guide.
 `DESIGN.md` owns the visual tokens in Google's DESIGN.md front matter and the
 icon entries. Read it before visual or asset work. The same pinned TypeScript
 toolchain lints DESIGN and renders profiles, social previews and terminals. Use
-the package at `e5a50c34bf66264a436288f96e44db9caa305912` (`v0.2.0`) in the
+the package at `e5a50c34bf66264a436288f96e44db9caa305912` in the
 ignored `.build/presentation-toolchain`, following its [local regeneration
 contract](https://github.com/showxu/skills/blob/e5a50c34bf66264a436288f96e44db9caa305912/skills/github-readme-design/references/renderers.md#local-regeneration):
 
 ```sh
-toolchain_commit='e5a50c34bf66264a436288f96e44db9caa305912' # v0.2.0
+toolchain_commit='e5a50c34bf66264a436288f96e44db9caa305912'
 toolchain_dir="$PWD/.build/presentation-toolchain"
 mkdir -p "$toolchain_dir"
 curl -fsSL "https://api.github.com/repos/showxu/skills/tarball/$toolchain_commit" \
