@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.1.1
+
+- End the `.github` repository's About sentence with a period, like every
+  member's; its catalog `about`, settings declaration and social preview match.
+
 ## 0.1.0
 
 - Define shared maintenance, compatibility, versioning and release policy for

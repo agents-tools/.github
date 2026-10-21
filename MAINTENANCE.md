@@ -222,7 +222,7 @@ adoption remains reported drift, never an implicit exemption.
   "repositories": {
     "agents-tools/.github": {
       "default_branch": "master",
-      "description": "Organization profile, brand and shared standards for agents-tools",
+      "description": "Organization profile, brand and shared standards for agents-tools.",
       "topics": [],
       "required_checks": [
         "policy / policy",
@@ -314,7 +314,7 @@ adoption remains reported drift, never an implicit exemption.
     },
     "skill-cli/.github": {
       "default_branch": "master",
-      "description": "Organization profile, brand and shared standards for skill-cli",
+      "description": "Organization profile, brand and shared standards for skill-cli.",
       "topics": [],
       "required_checks": [
         "policy / policy",
