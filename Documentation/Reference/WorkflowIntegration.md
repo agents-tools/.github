@@ -1,7 +1,8 @@
 # Workflow integration
 
-Members call reusable workflows at a reviewed **full 40-character commit SHA**
-with a `# vX.Y.Z` comment. `agents-tools/.github` supplies family policy and
+Members call reusable workflows at a reviewed **full 40-character commit SHA**.
+A release pin adds its `# vX.Y.Z` comment; while a change to the standard is in
+progress, members pin its commits by SHA alone. `agents-tools/.github` supplies family policy and
 Swift CI; each organization's `.github` supplies presentation and profile
 checks with its own DESIGN, fonts and catalog. `skill-cli/.github` adopts
 family maintenance and versioning by reference and owns its organization
@@ -21,7 +22,8 @@ All require only `contents: read`, accept no caller secrets, and expose no outpu
 They use one sequential job each: any failed step fails the required context.
 There is no skipped-success aggregate. Explicit permissions exist at workflow
 and job scope; checkout credentials are not persisted. All external actions
-are pinned to full SHAs with version comments.
+are pinned to full SHAs; released actions carry their version comments, and an
+unreleased toolchain commit is pinned by SHA alone.
 
 Policy validates PR titles on `pull_request` events and commit subjects using the types in
 [MAINTENANCE](../../MAINTENANCE.md#change-flow). It checks new commit messages
@@ -204,8 +206,8 @@ A tool commits these assets under its asset root:
 ```
 
 The build job uploads the freshly built executable. Its dependent
-`presentation` job calls the organization's standard at a reviewed full SHA
-with a version comment. This follows the toolchain's [member caller
+`presentation` job calls the organization's standard at a reviewed full SHA,
+with the version comment of a release. This follows the toolchain's [member caller
 contract](https://github.com/showxu/skills/blob/e5a50c34bf66264a436288f96e44db9caa305912/skills/github-readme-design/references/renderers.md#organization-standard-and-member-caller):
 
 ```yaml
@@ -227,8 +229,8 @@ jobs:
       executable-path: agents
 ```
 
-Replace the 40 zeros and version comment with the accepted standard commit
-and tag. skill-cli members use
+Replace the 40 zeros with the accepted standard commit, and the version
+comment with its release version or nothing for an unreleased commit. skill-cli members use
 `skill-cli/.github/.github/workflows/presentation.yml` and their own built
 executable path. `runner` must match the OS that built the executable; its
 default is `ubuntu-24.04`. `executable-path` is relative to the uploaded
@@ -308,8 +310,8 @@ jobs:
 ```
 
 skill-cli dashboards use `skill-cli/.github/.github/workflows/profile.yml`.
-Replace the zeros and version comment with the accepted standard commit and
-tag. Member mode reads `profile/member.json` by default and supplies
+Replace the zeros with the accepted standard commit, and the version comment
+with its release version or nothing for an unreleased commit. Member mode reads `profile/member.json` by default and supplies
 `job.workflow_sha` as `catalog-revision`; public mode supplies neither member
 input nor catalog revision to the Action. Member JSON keeps `maintenance` and
 `repositories`; remove its `catalog` binding. The single workflow pin selects
@@ -354,9 +356,10 @@ only after it has appeared and passed on a real run under the activation gate.
    with profile workflow callers. Resolve unavailable refs as unknown; do not
    auto-repin or fail a consumer solely because the shared default branch
    advanced.
-5. Create signed, annotated standard tags only after this consumer gate and
-   the owner's confirmation of each tag, under [VERSIONING](../../VERSIONING.md).
-   Keep full SHA pins with their `# vX.Y.Z` comments; tags are never moved.
+5. When the change is complete, create signed, annotated standard tags only
+   after this consumer gate and the owner's confirmation of each tag, under
+   [VERSIONING](../../VERSIONING.md), then move callers to the release pins
+   with their `# vX.Y.Z` comments in one pass. Tags are never moved.
 6. Change related caller pins together. A renamed required job updates the
    maintenance declaration and live ruleset only after its new context is
    verified. Read back settings with `python3 Scripts/check`; it never applies

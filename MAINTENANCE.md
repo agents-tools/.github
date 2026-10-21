@@ -393,7 +393,8 @@ Each member with Actions workflows configures `github-actions` updates weekly.
 Dependabot files are repository-local and are not inherited. Updates follow
 the same signed/reviewed change flow and preserve the release dependency
 contract. Pin every external action and reusable workflow to a full commit
-SHA, with a version comment for actions. The committed
+SHA, with a version comment for released actions; an unreleased toolchain
+commit is pinned by SHA alone. The committed
 `.github/workflows/policy.yml` owns its action pins and version comments;
 `Scripts/sync-policy-workflow.py` reads and preserves them during regeneration.
 Its version comments contain only dot-separated ASCII decimal numbers with an
