@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- VERSIONING's release timing no longer describes how other repositories
+  reference a release; the [workflow integration guide](docs/reference/workflow-integration.md)
+  and each member's release reference own that.
+
 ## 0.1.1
 
 - End the `.github` repository's About sentence with a period, like every
