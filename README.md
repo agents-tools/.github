@@ -25,7 +25,7 @@ CODEOWNERS, workflows, and repository-specific development instructions.
 | `GOVERNANCE.md` | Maintainer responsibilities, scope, and decision records |
 | `MAINTENANCE.md` | Change flow, signing, declared settings, review and legacy exceptions |
 | `VERSIONING.md` | Version sources, immutable tags, changelogs and release order |
-| `Documentation/Reference/WorkflowIntegration.md` | Reusable workflow interfaces, caller pins and required contexts |
+| `docs/reference/workflow-integration.md` | Reusable workflow interfaces, caller pins and required contexts |
 | `.github/ISSUE_TEMPLATE/` | Bug and feature templates, plus security reporting guidance |
 | `.github/pull_request_template.md` | Change summary, validation, and documentation prompts |
 | `profile/catalog.json` | Profile content, repository kinds, titles, About descriptions and icons |
@@ -33,10 +33,11 @@ CODEOWNERS, workflows, and repository-specific development instructions.
 | `profile/README.md` | Organization profile generated from the catalog |
 | `profile/assets/` | Organization avatar and profile mark |
 | `DESIGN.md` | Visual tokens in Google's DESIGN.md format, the app icon entry and framework logo entries |
-| `Brand/Icon/` | App icon layer artwork |
-| `Brand/Exports/agents/` | Icon Composer document generated from the app icon entry |
-| `Scripts/` | Presentation input resolver, policy generator and read-only repository/settings checks |
-| `Tests/` | Workflow, input resolver, policy, settings and repository metadata tests |
+| `.github/design/icons/agents/layers/` | App icon layer artwork |
+| `.github/design/icons/*/provenance.json` | Verified icon outputs, consumed copies and SHA-256 digests |
+| `.github/design/fonts/` | Variable font and its upstream license |
+| `scripts/` | Presentation input resolver, policy generator and read-only repository/settings checks |
+| `tests/` | Workflow, input resolver, provenance, policy, settings and repository metadata tests |
 | `.github/workflows/` | Shared policy, Swift CI, presentation and profile checks, plus this repository's callers |
 | `.github/dependabot.yml` | Weekly Actions dependency updates |
 | `AGENTS.md` | Repository-specific agent guide |
@@ -53,7 +54,7 @@ The organization also declares its own `.github` repository's `about`.
 Marks and icons may select light and dark images.
 
 The profile workflow owns catalog validation and compares the generated
-profile byte for byte. `Scripts/check` reads membership fields and compares
+profile byte for byte. `scripts/check` reads membership fields and compares
 membership and every `about` with GitHub in online and public modes; it lists
 all description differences together. Offline mode skips these live checks.
 The private `.github-private` dashboard uses the catalog and DESIGN at its
@@ -65,10 +66,10 @@ Public membership and About checks use the GitHub API with optional
 `GITHUB_TOKEN` read access. Run:
 
 ```sh
-python3 -B -m unittest discover -s Tests -v
-python3 Scripts/check --offline
-python3 Scripts/check --public
-python3 Scripts/check
+python3 -B -m unittest discover -s tests -v
+python3 scripts/check --offline
+python3 scripts/check --public
+python3 scripts/check
 ```
 
 The default online mode also needs an authenticated `gh` session that can
@@ -81,9 +82,9 @@ it never mutates GitHub. See [Maintenance](MAINTENANCE.md#read-only-verification
 
 Follow [Maintenance](MAINTENANCE.md) for change flow and declarations,
 [Versioning](VERSIONING.md) for release policy, and
-[Workflow integration](Documentation/Reference/WorkflowIntegration.md) for
-shared workflow interfaces and adoption. After editing `Scripts/check-policy.py`
-or its workflow generator, run `python3 Scripts/sync-policy-workflow.py` and
+[Workflow integration](docs/reference/workflow-integration.md) for
+shared workflow interfaces and adoption. After editing `scripts/check-policy.py`
+or its workflow generator, run `python3 scripts/sync-policy-workflow.py` and
 commit the generated workflow too.
 
 Before handoff, run the offline and online checks, unit tests, `actionlint`
@@ -96,12 +97,12 @@ the real consumer evidence described in the integration guide.
 `DESIGN.md` owns the visual tokens in Google's DESIGN.md front matter and the
 icon entries. Read it before visual or asset work. The same pinned TypeScript
 toolchain lints DESIGN and renders profiles, social previews and terminals. Use
-the package at `e5a50c34bf66264a436288f96e44db9caa305912` in the
+the package at `7a983a1599135176e632dc4c9f5784972bfb27de` (`v0.2.0`) in the
 ignored `.build/presentation-toolchain`, following its [local regeneration
-contract](https://github.com/showxu/skills/blob/e5a50c34bf66264a436288f96e44db9caa305912/skills/github-readme-design/references/renderers.md#local-regeneration):
+contract](https://github.com/showxu/skills/blob/7a983a1599135176e632dc4c9f5784972bfb27de/skills/github-readme-design/references/renderers.md#local-regeneration):
 
 ```sh
-toolchain_commit='e5a50c34bf66264a436288f96e44db9caa305912'
+toolchain_commit='7a983a1599135176e632dc4c9f5784972bfb27de' # v0.2.0
 toolchain_dir="$PWD/.build/presentation-toolchain"
 mkdir -p "$toolchain_dir"
 curl -fsSL "https://api.github.com/repos/showxu/skills/tarball/$toolchain_commit" \
@@ -119,11 +120,11 @@ node "$toolchain_dir/src/cli.ts" profile render \
 node "$toolchain_dir/src/cli.ts" profile check \
   --design DESIGN.md --catalog profile/catalog.json --out profile/README.md
 node "$toolchain_dir/src/cli.ts" social-preview render \
-  --design DESIGN.md --fonts Brand/Fonts --catalog profile/catalog.json \
+  --design DESIGN.md --fonts .github/design/fonts --catalog profile/catalog.json \
   --repository .github --icon profile/assets/icon.png \
   --out .github/assets/social-preview/social-preview.png
 node "$toolchain_dir/src/cli.ts" social-preview check \
-  --design DESIGN.md --fonts Brand/Fonts --catalog profile/catalog.json \
+  --design DESIGN.md --fonts .github/design/fonts --catalog profile/catalog.json \
   --repository .github --icon profile/assets/icon.png \
   --assets .github/assets/social-preview
 ```
@@ -149,8 +150,9 @@ and
 skills. Native Liquid Glass rendering needs macOS with Xcode's Icon Composer
 and `rsvg-convert`.
 
-For the agents app icon, edit its entry or the artwork in `Brand/Icon/`, then
-run from this repository, with `APP_ICONS` set to that skill's `scripts/app_icons.py`:
+For the agents app icon, edit its entry or the artwork in
+`.github/design/icons/agents/layers/`, then run from this repository, with
+`APP_ICONS` set to that skill's `scripts/app_icons.py`:
 
 ```sh
 python3 "$APP_ICONS" DESIGN.md --name agents --lint
@@ -160,16 +162,39 @@ python3 "$APP_ICONS" DESIGN.md --name agents --style liquid-glass --out .build/i
 ```
 
 Review `.build/icon/contact-sheet.png` and open the generated `.icon` in Icon
-Composer, then replace the committed outputs:
+Composer. The document stays in ignored scratch. Copy the consumed outputs
+to their owners:
 
-| Generated | Committed |
+| Generated | Consumed copy |
 | --- | --- |
-| `.build/icon-document/` | `Brand/Exports/agents/` |
 | `.build/icon/web/avatar-1024.png` | `profile/assets/avatar.png` |
 | `.build/icon/web/icon-512.png` | `profile/assets/icon.png` |
+| `.build/icon/web/icon-512.png` | `.github/assets/logo/logo.png` in agents-tools/cli |
 
-`python3 "$APP_ICONS" DESIGN.md --name agents --style liquid-glass --check Brand/Exports/agents --document-only`
-reports drift between the entry and the committed document.
+Record each consumed copy in `.github/design/icons/agents/provenance.json`:
+its repository, path, generator output path and SHA-256, together with the
+skill name, full skill commit, exact command, renderer version and verification
+date. For a drift check, regenerate into `.build/icon` with the recorded skill
+commit and renderer, then compare the output digests with the receipt:
+
+```sh
+python3 -B - <<'PYTHON'
+import hashlib
+import json
+from pathlib import Path
+
+receipt = json.loads(Path(".github/design/icons/agents/provenance.json").read_text())
+for copy in receipt["copies"]:
+    output = Path(".build/icon") / copy["output"]
+    digest = hashlib.sha256(output.read_bytes()).hexdigest()
+    if digest != copy["sha256"]:
+        raise SystemExit(f"Icon drift: {copy['repository']}: {copy['path']}")
+PYTHON
+```
+
+Repository tests compare every `profile/assets/` file with its receipt;
+member presentation checks verify each caller-owned catalog icon against the
+receipts at the pinned standard.
 
 Framework logos for libraries are generated with that skill's
 `scripts/design_icons.py`, as `DESIGN_ICONS`:
@@ -185,4 +210,7 @@ The generators write only new output directories, so remove the previous
 `.github/assets/logo/logo.svg` and `.github/assets/logo/logo.png` in
 agents-tools/core, then check them from this repository with
 `python3 "$DESIGN_ICONS" DESIGN.md --check "core=<core checkout>/.github/assets/logo/logo.svg"`.
+Record both core copies in `.github/design/icons/core/provenance.json` with
+the same fields. Compare their generated digests with that receipt, using
+`.build/logos` as the output root.
 The organization avatar on GitHub is uploaded from `profile/assets/avatar.png`.

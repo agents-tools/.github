@@ -82,7 +82,7 @@ class GeneratedWorkflowTests(unittest.TestCase):
         self.root = ROOT / '.build/test-policy-workflow'
         self.root.mkdir(parents=True)
         self.addCleanup(shutil.rmtree, self.root)
-        for relative in ('Scripts/check-policy.py', 'Scripts/sync-policy-workflow.py',
+        for relative in ('scripts/check-policy.py', 'scripts/sync-policy-workflow.py',
                          '.github/workflows/policy.yml'):
             destination = self.root / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
@@ -94,7 +94,7 @@ class GeneratedWorkflowTests(unittest.TestCase):
 
     def run_generator(self, *arguments):
         return subprocess.run(
-            [sys.executable, str(self.root / 'Scripts/sync-policy-workflow.py'), *arguments],
+            [sys.executable, str(self.root / 'scripts/sync-policy-workflow.py'), *arguments],
             cwd=self.root, capture_output=True, text=True,
         )
 
