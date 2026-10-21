@@ -213,7 +213,7 @@ A tool commits these assets under its asset root:
 The build job uploads the freshly built executable. Its dependent
 `presentation` job calls the organization's standard at a reviewed full SHA,
 with the version comment of a release. This follows the toolchain's [member caller
-contract](https://github.com/showxu/skills/blob/7a983a1599135176e632dc4c9f5784972bfb27de/skills/github-readme-design/references/renderers.md#organization-standard-and-member-caller):
+contract](https://github.com/showxu/skills/blob/9e5d7268232b78f5fbef21ccfb9e3a079f2ef7e3/skills/github-readme-design/references/renderers.md#organization-standard-and-member-caller):
 
 ```yaml
 jobs:
@@ -297,7 +297,7 @@ review and commit the files together. Invalid inputs or failed commands also
 fail; when no files were generated, archival and upload skip the absent output.
 Local regeneration uses the same pinned package and standard inputs as
 described in the toolchain's [local
-instructions](https://github.com/showxu/skills/blob/7a983a1599135176e632dc4c9f5784972bfb27de/skills/github-readme-design/references/renderers.md#local-regeneration).
+instructions](https://github.com/showxu/skills/blob/9e5d7268232b78f5fbef21ccfb9e3a079f2ef7e3/skills/github-readme-design/references/renderers.md#local-regeneration).
 Uploading the social preview in GitHub Settings remains manual.
 
 ## Profile callers
