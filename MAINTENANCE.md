@@ -91,15 +91,15 @@ not assumed. Never add a nonexistent context to a live ruleset.
 | Repository | Required contexts after adoption | Release tag format / protection glob |
 | --- | --- | --- |
 | `agents-tools/.github` | `policy / policy`, `check` | `vX.Y.Z` / `v*` |
-| `agents-tools/core` | `policy / policy`, `validate / swift-package` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
+| `agents-tools/core` | `policy / policy`, `validate / swift-package`, `presentation / presentation` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
 | `agents-tools/cli` | `policy / policy`, `validate / swift-package`, `smoke`, `presentation / presentation` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
-| `agents-tools/homebrew-tap` | `policy / policy`, `homebrew` | None |
+| `agents-tools/homebrew-tap` | `policy / policy`, `homebrew`, `presentation / presentation` | None |
 | `agents-tools/agents-tools.github.io` | `policy / policy`, `site` | None |
-| `agents-tools/.github-private` | `policy / policy`, `check` | None |
+| `agents-tools/.github-private` | `policy / policy`, `check / profile` | None |
 | `skill-cli/.github` | `policy / policy`, `check` | `vX.Y.Z` / `v*` |
 | `skill-cli/cli` | `policy / policy`, `validate / swift-package`, `smoke`, `presentation / presentation` | `vX.Y.Z` / `v*` |
-| `skill-cli/homebrew-tap` | `policy / policy`, `homebrew` | None |
-| `skill-cli/.github-private` | `policy / policy`, `check` | None |
+| `skill-cli/homebrew-tap` | `policy / policy`, `homebrew`, `presentation / presentation` | None |
+| `skill-cli/.github-private` | `policy / policy`, `check / profile` | None |
 
 The 2026-10-19 audits observed `Swift Package` and `validate-commit-messages`
 in core, `Swift CLI` and `validate-commit-messages` in both CLIs, and no check
@@ -112,7 +112,9 @@ re-record their terminal scripts against their freshly built executable and
 compare the recording, both SVGs and their social preview. Each organization
 pins the toolchain Action in its presentation workflow; DESIGN and fonts come
 from that standard at `job.workflow_sha`. Core and the taps have no terminal
-demo. Both standards repositories check their own social preview and public
+demo; they require `presentation / presentation` for their social previews.
+Each `.github-private` dashboard requires `check / profile`, its call of the
+standard's profile workflow. Both standards repositories check their own social preview and public
 profile through local reusable workflow calls. The tool path requires a real
 CLI consumer run at the candidate standard commit on its own build runner
 before adoption. The [integration
@@ -242,7 +244,8 @@ adoption remains reported drift, never an implicit exemption.
       ],
       "required_checks": [
         "policy / policy",
-        "validate / swift-package"
+        "validate / swift-package",
+        "presentation / presentation"
       ],
       "release_tag_patterns": [
         "refs/tags/[0-9]*.[0-9]*.[0-9]*"
@@ -282,7 +285,8 @@ adoption remains reported drift, never an implicit exemption.
       ],
       "required_checks": [
         "policy / policy",
-        "homebrew"
+        "homebrew",
+        "presentation / presentation"
       ],
       "release_tag_patterns": []
     },
@@ -303,7 +307,7 @@ adoption remains reported drift, never an implicit exemption.
       "visibility": "private",
       "required_checks": [
         "policy / policy",
-        "check"
+        "check / profile"
       ],
       "release_tag_patterns": [],
       "enforcement_gap": "Repository rulesets are unavailable for private repositories on the Free plan."
@@ -353,7 +357,8 @@ adoption remains reported drift, never an implicit exemption.
       ],
       "required_checks": [
         "policy / policy",
-        "homebrew"
+        "homebrew",
+        "presentation / presentation"
       ],
       "release_tag_patterns": []
     },
@@ -364,7 +369,7 @@ adoption remains reported drift, never an implicit exemption.
       "visibility": "private",
       "required_checks": [
         "policy / policy",
-        "check"
+        "check / profile"
       ],
       "release_tag_patterns": [],
       "enforcement_gap": "Repository rulesets are unavailable for private repositories on the Free plan."
