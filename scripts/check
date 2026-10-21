@@ -15,7 +15,7 @@ from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(ROOT / "Scripts"))
+sys.path.insert(0, str(ROOT / "scripts"))
 import settings
 
 
@@ -171,11 +171,11 @@ def main(argv=None, *, root=ROOT):
 
     try:
         result = subprocess.run(
-            [sys.executable, str(root / "Scripts/sync-policy-workflow.py"), "--check"],
+            [sys.executable, str(root / "scripts/sync-policy-workflow.py"), "--check"],
             cwd=root, capture_output=True, text=True, check=False,
         )
         if result.returncode:
-            raise ValueError("run python3 Scripts/sync-policy-workflow.py to regenerate")
+            raise ValueError("run python3 scripts/sync-policy-workflow.py to regenerate")
         print("PASS generated policy workflow")
     except (OSError, ValueError) as error:
         print("FAIL generated policy workflow: " + str(error))

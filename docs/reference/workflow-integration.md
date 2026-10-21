@@ -64,8 +64,8 @@ GitHub enables manual runs once the workflow exists on the default branch;
 the dispatched ref chooses the commit to validate. See the
 [dispatch event contract](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch).
 
-`Scripts/check-policy.py` owns policy behavior. Run
-`python3 Scripts/sync-policy-workflow.py` after changing it and commit both the
+`scripts/check-policy.py` owns policy behavior. Run
+`python3 scripts/sync-policy-workflow.py` after changing it and commit both the
 script and generated `policy.yml`. The workflow embeds the implementation at
 the caller's pin; it does not execute a policy script from the consumer's PR.
 Action pins and their version comments live only in the committed workflow.
@@ -179,15 +179,18 @@ The standard's catalog selects the expected assets for each caller:
 
 | Catalog kind | Checked asset directories | Executable inputs |
 | --- | --- | --- |
-| `tool` | `terminal`, `social-preview` | Both required |
-| `library`, `app`, `distribution` | `social-preview` | Both rejected |
+| `tool` | `logo`, `terminal`, `social-preview` | Both required |
+| `library`, `app` | `logo`, `social-preview` | Both rejected |
+| `distribution` | `social-preview` | Both rejected |
 | Organization `.github` (implicit kind `organization`) | `social-preview` | Both rejected |
 | `website` | None; calling the workflow fails with `kind website has no presentation assets` | Not applicable |
 
 The caller owner must exactly match `organization.login`; any repository other
 than `.github` must be in the catalog. Missing expected directories and a
-terminal directory for a kind without terminal fail. Repository entries
-require `kind`, `title` and `about` after `icon`; `about` equals the live
+terminal directory for a kind without terminal fail. Tools, libraries and apps
+require a `logo/` directory under the asset root. Distributions, websites and
+the organization use standard icons and reject a `logo/` directory. Repository
+entries require `kind`, `title` and `about` after `icon`; `about` equals the live
 repository description. The organization declares its `.github` repository
 About in `organization.about`.
 
@@ -195,6 +198,8 @@ A tool commits these assets under its asset root:
 
 ```text
 .github/assets/
+├── logo/
+│   └── logo.png              # or logo-light.png and logo-dark.png
 ├── terminal/
 │   ├── script.yml
 │   ├── fixture/              # optional source files copied into the sandbox
@@ -208,7 +213,7 @@ A tool commits these assets under its asset root:
 The build job uploads the freshly built executable. Its dependent
 `presentation` job calls the organization's standard at a reviewed full SHA,
 with the version comment of a release. This follows the toolchain's [member caller
-contract](https://github.com/showxu/skills/blob/e5a50c34bf66264a436288f96e44db9caa305912/skills/github-readme-design/references/renderers.md#organization-standard-and-member-caller):
+contract](https://github.com/showxu/skills/blob/7a983a1599135176e632dc4c9f5784972bfb27de/skills/github-readme-design/references/renderers.md#organization-standard-and-member-caller):
 
 ```yaml
 jobs:
@@ -248,7 +253,7 @@ jobs:
 
 With caller job ID `presentation` and no caller `name` override, the context
 is **`presentation / presentation`**. Core and the taps have no terminal demo;
-this workflow checks their social previews. Their existing required-context
+this workflow checks their logos (libraries) and social previews. Their existing required-context
 declarations remain unchanged until member adoption passes its real-run gate.
 
 The workflow validates GitHub's `job.workflow_sha`, then checks out the caller
@@ -260,20 +265,26 @@ An absent or invalid SHA fails before checkout. The caller checkout uses the
 event commit, including the test merge commit on PRs. This interface targets
 GitHub.com, where that workflow identity is available.
 
-`Scripts/presentation-inputs.py` runs from the pinned standard and resolves
-kind, catalog selector and local icon. The icon is the entry's light-page URL
-(or the organization's `mark` for `.github`). It must be
+`scripts/presentation-inputs.py` runs from the pinned standard and resolves
+kind, catalog selector and local icons. Catalog icons (or the organization's
+`mark` for `.github`) must use
 `https://raw.githubusercontent.com/<organization>/<repository>/HEAD/<path>`:
 `.github` resolves in `standard/`, and a member's own repository resolves in
 `caller/`. Other hosts, owners, repositories and refs, queries, fragments,
 absolute paths, `..` segments and missing files fail with the URL named.
+Every icon file resolved in the caller, including both light and dark
+variants, must match a `copies` entry for that repository and path in the
+standard's `.github/design/icons/*/provenance.json`, with identical SHA-256.
+A missing or mismatched receipt fails naming the file. The light-page icon is
+the rendering input. Repository tests verify every standard `profile/assets/`
+file against its receipt, including avatars that are not rendering inputs.
 
 For a tool, the workflow downloads `executable-artifact`, validates the path
 and restores its execute bit. The pinned toolchain records the terminal
 script against that executable in a fresh sandbox, then compares the recording
 and both SVGs byte for byte. For every accepted kind it renders and compares
 the social preview PNG. DESIGN, fonts and catalog come from
-`standard/DESIGN.md`, `standard/Brand/Fonts` and `standard/profile/catalog.json`
+`standard/DESIGN.md`, `standard/.github/design/fonts` and `standard/profile/catalog.json`
 at `job.workflow_sha`. The standard's Action pin selects the toolchain and its
 locked parser; members select all these inputs through their standard pin.
 Organization DESIGN lint uses that same Action and parser.
@@ -286,7 +297,7 @@ review and commit the files together. Invalid inputs or failed commands also
 fail; when no files were generated, archival and upload skip the absent output.
 Local regeneration uses the same pinned package and standard inputs as
 described in the toolchain's [local
-instructions](https://github.com/showxu/skills/blob/e5a50c34bf66264a436288f96e44db9caa305912/skills/github-readme-design/references/renderers.md#local-regeneration).
+instructions](https://github.com/showxu/skills/blob/7a983a1599135176e632dc4c9f5784972bfb27de/skills/github-readme-design/references/renderers.md#local-regeneration).
 Uploading the social preview in GitHub Settings remains manual.
 
 ## Profile callers
@@ -362,10 +373,10 @@ only after it has appeared and passed on a real run under the activation gate.
    with their `# vX.Y.Z` comments in one pass. Tags are never moved.
 6. Change related caller pins together. A renamed required job updates the
    maintenance declaration and live ruleset only after its new context is
-   verified. Read back settings with `python3 Scripts/check`; it never applies
+   verified. Read back settings with `python3 scripts/check`; it never applies
    them. Dependabot's weekly Actions PRs use this same review and consumer gate.
 
-`python3 Scripts/check --offline` reads catalog membership fields and checks
+`python3 scripts/check --offline` reads catalog membership fields and checks
 the declaration and generated policy. The profile workflow owns catalog
 validation and generated-profile comparison. CI uses `--public` to compare
 public membership and repository About descriptions without attempting

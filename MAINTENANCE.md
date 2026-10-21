@@ -118,7 +118,7 @@ standard's profile workflow. Both standards repositories check their own social 
 profile through local reusable workflow calls. The tool path requires a real
 CLI consumer run at the candidate standard commit on its own build runner
 before adoption. The [integration
-guide](Documentation/Reference/WorkflowIntegration.md) defines caller names and
+guide](docs/reference/workflow-integration.md) defines caller names and
 the rollout gate. Shared Swift automation still needs a representative member
 run before rollout.
 
@@ -136,7 +136,7 @@ Any setting, metadata, ruleset or required-context change updates this
 declaration and its explanatory table in the **same PR** as the associated
 workflow or governance change. After review and a real run, the authorized
 maintainer applies the declared live change and records the readback in that
-PR. `Scripts/check` reports differences without applying them. A pending
+PR. `scripts/check` reports differences without applying them. A pending
 adoption remains reported drift, never an implicit exemption.
 
 ### Declaration
@@ -401,11 +401,11 @@ contract. Pin every external action and reusable workflow to a full commit
 SHA, with a version comment for released actions; an unreleased toolchain
 commit is pinned by SHA alone. The committed
 `.github/workflows/policy.yml` owns its action pins and version comments;
-`Scripts/sync-policy-workflow.py` reads and preserves them during regeneration.
+`scripts/sync-policy-workflow.py` reads and preserves them during regeneration.
 Its version comments contain only dot-separated ASCII decimal numbers with an
 optional `v` prefix, such as `# v1.2.3` or `# 1.2.3`.
 Dependabot pin-only updates pass the generated-workflow check without edits
-to the generator. Policy behavior remains owned by `Scripts/check-policy.py`;
+to the generator. Policy behavior remains owned by `scripts/check-policy.py`;
 changes to it require regeneration, and hand edits to the embedded policy or
 generated workflow structure fail the check.
 Consumers advance shared workflow pins through reviewed PRs after a
@@ -460,7 +460,7 @@ These are not unsigned-commit exceptions.
 
 ## Read-only verification
 
-Run `python3 Scripts/check` using an authenticated `gh` session with read
+Run `python3 scripts/check` using an authenticated `gh` session with read
 access to repository settings across both organizations. It compares merge
 settings, token defaults, full repository/inherited rulesets, private reporting,
 descriptions and topics for every declared member. All GitHub calls are GETs;

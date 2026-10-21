@@ -8,6 +8,9 @@ moved, reused or decreased.
 
 ## When to release
 
+Where a delivery workflow governs the project, it decides when to release;
+otherwise:
+
 Release once a change is complete: everything it needs, including
 documentation, is merged and verified. A change that spans several pull
 requests or repositories releases once, when all of it has landed, or at
@@ -73,10 +76,9 @@ major's removals beforehand.
 ## Release procedure
 
 1. Choose the next version using the rules above.
-2. In the change's final PR, or in a release PR when the change has already
-   merged, set the version source and its mirrors, move the Unreleased entries
-   into the new `## X.Y.Z` section, and leave an empty `## Unreleased` section
-   at the top.
+2. In the change's final PR, set the version source and its mirrors, move the
+   Unreleased entries into the new `## X.Y.Z` section, and leave an empty
+   `## Unreleased` section at the top.
 3. Run the repository checks and complete the ecosystem release preparation
    below. Resolve review findings before accepting the PR.
 4. Squash merge the accepted PR.
@@ -91,9 +93,9 @@ tag's version and that `CHANGELOG.md` at that commit has the matching section.
 Repository checks:
 
 ```sh
-python3 -m unittest discover -s Tests
-python3 Scripts/check --offline
-python3 Scripts/check
+python3 -m unittest discover -s tests
+python3 scripts/check --offline
+python3 scripts/check
 actionlint
 git diff --check origin/master
 ```
@@ -119,7 +121,7 @@ publish signed, annotated SemVer tags `vX.Y.Z` on the default branch once a
 change to a consumed interface or output is complete, as
 [When to release](#when-to-release) states. Create each standard tag only after
 the
-[consumer real-run gate](Documentation/Reference/WorkflowIntegration.md#adopt-and-update-pins)
+[consumer real-run gate](docs/reference/workflow-integration.md#adopt-and-update-pins)
 passes and the owner confirms that tag. Consumers pin a release's full commit
 SHA with a `# vX.Y.Z` comment so Dependabot proposes upgrades; while a change
 is in progress, members pin its commits by SHA alone.
@@ -128,10 +130,10 @@ is in progress, members pin its commits by SHA alone.
 
 | Repository | Version source | Release tag | Release owner/checklist |
 | --- | --- | --- | --- |
-| `agents-tools/.github` | Git tag | `vX.Y.Z` | This policy and the [consumer real-run gate](Documentation/Reference/WorkflowIntegration.md#adopt-and-update-pins) |
+| `agents-tools/.github` | Git tag | `vX.Y.Z` | This policy and the [consumer real-run gate](docs/reference/workflow-integration.md#adopt-and-update-pins) |
 | `agents-tools/core` | Git tag | `X.Y.Z` | [Core release checklist](https://github.com/agents-tools/core/blob/master/Documentation/Reference/Release.md) |
 | `agents-tools/cli` | `BuildInfo.version` in `Sources/CLI/EntryPoint.swift` | `X.Y.Z` | [agents release checklist](https://github.com/agents-tools/cli/blob/master/Documentation/Reference/Release.md) |
-| `skill-cli/.github` | Git tag | `vX.Y.Z` | [Standard README](https://github.com/skill-cli/.github/blob/master/README.md) and the [consumer real-run gate](Documentation/Reference/WorkflowIntegration.md#adopt-and-update-pins) |
+| `skill-cli/.github` | Git tag | `vX.Y.Z` | [Standard README](https://github.com/skill-cli/.github/blob/master/README.md) and the [consumer real-run gate](docs/reference/workflow-integration.md#adopt-and-update-pins) |
 | `skill-cli/cli` | `BuildInfo.version` in `Sources/CLI/EntryPoint.swift` | `vX.Y.Z` | [skill release checklist](https://github.com/skill-cli/cli/blob/master/Documentation/Reference/Release.md) |
 | `agents-tools/homebrew-tap` | Upstream CLI version in each formula | None of its own | [agents tap](https://github.com/agents-tools/homebrew-tap#readme); formula validation in the agents checklist |
 | `skill-cli/homebrew-tap` | Upstream CLI version in each formula | None of its own | [skill tap](https://github.com/skill-cli/homebrew-tap#readme); formula validation in the skill checklist |

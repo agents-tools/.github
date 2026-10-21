@@ -6,10 +6,10 @@ Read `README.md` first.
   legacy exceptions. Its JSON declaration is the checker's expected state;
   update it and its table together when settings or check names change.
 - `VERSIONING.md` owns family version policy and release order.
-- `Documentation/Reference/WorkflowIntegration.md` owns reusable workflow
+- `docs/reference/workflow-integration.md` owns reusable workflow
   interfaces and the real-run gate before activating rulesets or rolling pins.
-- Edit policy behavior in `Scripts/check-policy.py`, run
-  `python3 Scripts/sync-policy-workflow.py`, and commit the generated workflow.
+- Edit policy behavior in `scripts/check-policy.py`, run
+  `python3 scripts/sync-policy-workflow.py`, and commit the generated workflow.
   Shared workflows must execute their pinned policy, not a consumer PR's script.
 
 - `profile/README.md` and `.github/assets/social-preview/social-preview.png`
@@ -22,7 +22,7 @@ Read `README.md` first.
   toolchain Action for DESIGN lint. Prove the tool path with a real CLI consumer
   run at the candidate standard commit before rolling pins.
 - Keep catalog membership equal to the organization's public, non-archived
-  repositories except `.github`; `python3 Scripts/check` verifies it against
+  repositories except `.github`; `python3 scripts/check` verifies it against
   GitHub. Every catalog `about` must equal the live repository description,
   including `organization.about` for `.github`.
 - Repository summaries state what the repository does for a visitor, in one
@@ -31,14 +31,16 @@ Read `README.md` first.
   tokens in the front matter) and icon entries. Read it before visual or asset
   work. After changing it, lint it (zero errors and zero warnings) and
   regenerate every affected output as described in `README.md`. Regenerate
-  affected outputs after `Brand/Icon/` artwork changes; commit sources and
-  outputs together. Tools use the app icon style; reusable libraries use the
-  framework icon style.
+  affected outputs after `.github/design/icons/agents/layers/` artwork changes;
+  commit sources and outputs together. Record consumed icon copies in
+  `.github/design/icons/*/provenance.json`; tests verify profile asset digests
+  and the presentation resolver verifies caller-owned catalog icons. Tools use
+  the app icon style; reusable libraries use the framework icon style.
 - Keep community files and templates applicable to every agents-tools
   repository. Repository-specific build and test commands belong in each
   repository's README.
-- Run `python3 Scripts/check --offline`, `python3 Scripts/check`,
-  `python3 -m unittest discover -s Tests`, `actionlint` (or parse every workflow
+- Run `python3 scripts/check --offline`, `python3 scripts/check`,
+  `python3 -m unittest discover -s tests`, `actionlint` (or parse every workflow
   as YAML if unavailable), and `git diff --check origin/master` before handoff.
   Report live drift and unknowns; checks never change settings. CI's `--public`
   mode does not establish administrative settings conformance.

@@ -1,0 +1,28 @@
+{
+  "icon": "agents",
+  "skill": "apple-app-icon-design",
+  "skill_commit": "968d45d906fd3ba67367abcaeb5b95621ea52224",
+  "command": "python3 -B <skills>/skills/apple-app-icon-design/scripts/app_icons.py DESIGN.md --name agents --style liquid-glass --out <scratch> --ictool <Icon Composer ictool>",
+  "renderer": "ictool bundle-version 129, short 27.0",
+  "verified_at": "2026-10-21",
+  "copies": [
+    {
+      "repository": "agents-tools/.github",
+      "path": "profile/assets/icon.png",
+      "output": "web/icon-512.png",
+      "sha256": "58981839dd6ad3f2c1f5ed4273a64563d95f29925b210c338e76216238a73825"
+    },
+    {
+      "repository": "agents-tools/.github",
+      "path": "profile/assets/avatar.png",
+      "output": "web/avatar-1024.png",
+      "sha256": "c576c091092428c307e806976edb78676ea4f73715741978842e83358b97d395"
+    },
+    {
+      "repository": "agents-tools/cli",
+      "path": ".github/assets/logo/logo.png",
+      "output": "web/icon-512.png",
+      "sha256": "58981839dd6ad3f2c1f5ed4273a64563d95f29925b210c338e76216238a73825"
+    }
+  ]
+}

@@ -171,17 +171,13 @@ monospaced so output keeps its column grid; titles, labels and body text are
 set proportional, which reads more compactly at display sizes.
 
 Rendered lettering, terminal sessions included, is converted to glyph outlines
-from `Brand/Fonts/GoogleSansCode[MONO,wght].ttf`, so every reader sees the same
-letterforms and widths whatever fonts they have installed. The font is
+from `.github/design/fonts/GoogleSansCode[MONO,wght].ttf`, so every reader sees
+the same letterforms and widths whatever fonts they have installed. The font is
 Google Sans Code v7.001 from the
 [googlefonts/googlesans-code](https://github.com/googlefonts/googlesans-code)
 release archive (SHA-256
 `eebba2a438882396e8530cad6d6cb80182b0afb6e9e0ad07b7340359a53ba2e9`), licensed
-under the SIL Open Font License 1.1 (`Brand/Fonts/OFL.txt`).
-
-The website reads static `MONO` 0 instances,
-`Brand/Fonts/GoogleSansCodeProportional-{Regular,Medium,Bold}.ttf`, which
-`python3 Brand/Fonts/instantiate.py` reproduces byte for byte.
+under the SIL Open Font License 1.1 (`.github/design/fonts/OFL.txt`).
 
 ## Layout
 
@@ -320,14 +316,14 @@ The website maps its roles to tokens and defines no colors or faces of its own.
           },
           "layers": [
             {
-              "source": "Brand/Icon/spirit-a.svg",
+              "source": ".github/design/icons/agents/layers/spirit-a.svg",
               "name": "Spirit A",
               "fill": {
                 "automatic-gradient": "#B57AFF"
               }
             },
             {
-              "source": "Brand/Icon/spirit-b.svg",
+              "source": ".github/design/icons/agents/layers/spirit-b.svg",
               "name": "Spirit B",
               "fill": {
                 "automatic-gradient": "#FF7AD6"
@@ -350,7 +346,7 @@ The website maps its roles to tokens and defines no colors or faces of its own.
           },
           "layers": [
             {
-              "source": "Brand/Icon/bloom-outer.svg",
+              "source": ".github/design/icons/agents/layers/bloom-outer.svg",
               "name": "Bloom outer",
               "fill": {
                 "solid": "#FFFFFF"
@@ -358,7 +354,7 @@ The website maps its roles to tokens and defines no colors or faces of its own.
               "opacity": 0.32
             },
             {
-              "source": "Brand/Icon/bloom-inner.svg",
+              "source": ".github/design/icons/agents/layers/bloom-inner.svg",
               "name": "Bloom inner",
               "fill": {
                 "solid": "#FFFFFF"
@@ -366,7 +362,7 @@ The website maps its roles to tokens and defines no colors or faces of its own.
               "opacity": 0.65
             },
             {
-              "source": "Brand/Icon/bloom-core.svg",
+              "source": ".github/design/icons/agents/layers/bloom-core.svg",
               "name": "Bloom core",
               "fill": {
                 "solid": "#FFFFFF"
@@ -393,7 +389,7 @@ The website maps its roles to tokens and defines no colors or faces of its own.
           },
           "layers": [
             {
-              "source": "Brand/Icon/shell.svg",
+              "source": ".github/design/icons/agents/layers/shell.svg",
               "name": "Shell",
               "fill": {
                 "automatic-gradient": "#1A1F5C"
@@ -419,7 +415,7 @@ The website maps its roles to tokens and defines no colors or faces of its own.
           },
           "layers": [
             {
-              "source": "Brand/Icon/star.svg",
+              "source": ".github/design/icons/agents/layers/star.svg",
               "name": "Ghost",
               "fill": {
                 "automatic-gradient": "#FFFFFF"
@@ -467,7 +463,7 @@ The website maps its roles to tokens and defines no colors or faces of its own.
 
 | Output | Path |
 | --- | --- |
-| Icon Composer document | `Brand/Exports/agents/agents.icon` |
+| Icon provenance and regeneration | `.github/design/icons/agents/provenance.json` |
 | Organization avatar, 1024 px | `profile/assets/avatar.png` |
 | Profile mark, 512 px | `profile/assets/icon.png` |
 | Core framework logo | `.github/assets/logo/logo.svg` and `.github/assets/logo/logo.png` in agents-tools/core |

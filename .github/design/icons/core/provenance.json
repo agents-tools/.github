@@ -1,0 +1,22 @@
+{
+  "icon": "core",
+  "skill": "apple-framework-icon-design",
+  "skill_commit": "968d45d906fd3ba67367abcaeb5b95621ea52224",
+  "command": "python3 -B <skills>/skills/apple-framework-icon-design/scripts/design_icons.py DESIGN.md --out <scratch> --name core --png",
+  "renderer": "apple-framework-icon-design/scripts/design_icons.py",
+  "verified_at": "2026-10-21",
+  "copies": [
+    {
+      "repository": "agents-tools/core",
+      "path": ".github/assets/logo/logo.svg",
+      "output": "core.svg",
+      "sha256": "9a1d4bed3e5e0a27b047ad7f4a61dd54436581c23014ff76e79acdd6dd93749e"
+    },
+    {
+      "repository": "agents-tools/core",
+      "path": ".github/assets/logo/logo.png",
+      "output": "core.png",
+      "sha256": "540c3a61fb41cfef925f3b061f028ef87b02297f5395f57ed571a68c69ccd52a"
+    }
+  ]
+}
