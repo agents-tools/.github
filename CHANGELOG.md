@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Declare `skill-cli/skill-cli.github.io`, the skill website, with the same settings and
+  required contexts as the agents website.
 - VERSIONING's release timing no longer describes how other repositories
   reference a release; the [workflow integration guide](docs/reference/workflow-integration.md)
   and each member's release reference own that.
