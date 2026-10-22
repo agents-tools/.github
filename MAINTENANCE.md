@@ -74,7 +74,7 @@ and any social card; catalog summaries may give additional context.
   checklist validates the exact version. `skill-cli/cli` uses `refs/tags/v*`.
   Both standards repositories publish signed SemVer tags `vX.Y.Z` under
   [VERSIONING.md](VERSIONING.md), after the consumer real-run gate and owner
-  confirmation. Taps, the website and the member profiles have no release tags
+  confirmation. Taps, the websites and the member profiles have no release tags
   of their own. Tag protection activation follows the declaration and gate
   below.
 
@@ -99,6 +99,7 @@ not assumed. Never add a nonexistent context to a live ruleset.
 | `skill-cli/.github` | `policy / policy`, `check` | `vX.Y.Z` / `v*` |
 | `skill-cli/cli` | `policy / policy`, `validate / swift-package`, `smoke`, `presentation / presentation` | `vX.Y.Z` / `v*` |
 | `skill-cli/homebrew-tap` | `policy / policy`, `homebrew`, `presentation / presentation` | None |
+| `skill-cli/skill-cli.github.io` | `policy / policy`, `site` | None |
 | `skill-cli/.github-private` | `policy / policy`, `check / profile` | None |
 
 The 2026-10-19 audits observed `Swift Package` and `validate-commit-messages`
@@ -359,6 +360,16 @@ adoption remains reported drift, never an implicit exemption.
         "policy / policy",
         "homebrew",
         "presentation / presentation"
+      ],
+      "release_tag_patterns": []
+    },
+    "skill-cli/skill-cli.github.io": {
+      "default_branch": "master",
+      "description": "Source for the skill website.",
+      "topics": [],
+      "required_checks": [
+        "policy / policy",
+        "site"
       ],
       "release_tag_patterns": []
     },
