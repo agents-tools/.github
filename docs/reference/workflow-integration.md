@@ -30,7 +30,7 @@ implementation validation belongs in that repository.
 Before rolling pins or activating rulesets, run a representative consumer at
 the exact candidate workflow commit. Swift changes need a package run; CLI
 demo changes need a fresh executable and terminal recording on its build
-runner. Preserve each member's smoke and release validation. Record the run
+runner. Preserve each member's release validation. Record the run
 URL, consumer head, shared commit, check names and GitHub Actions App ID
 (`15368`) in the adoption PR. Local syntax checks do not establish this gate.
 

@@ -95,12 +95,12 @@ not assumed. Never add a nonexistent context to a live ruleset.
 | `agents-tools/.github` | `policy / policy`, `check` | `vX.Y.Z` / `v*` |
 | `agents-tools/github-workflows` | `policy / policy`, `result` | `vX.Y.Z` / `v*` |
 | `agents-tools/core` | `policy / policy`, `validate / result` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
-| `agents-tools/cli` | `policy / policy`, `validate / result`, `smoke` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
+| `agents-tools/cli` | `policy / policy`, `validate / result` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
 | `agents-tools/homebrew-tap` | `policy / policy`, `homebrew / homebrew` | None |
 | `agents-tools/agents-tools.github.io` | `policy / policy`, `site` | None |
 | `agents-tools/.github-private` | `policy / policy` | None |
 | `skill-cli/.github` | `policy / policy`, `check` | `vX.Y.Z` / `v*` |
-| `skill-cli/cli` | `policy / policy`, `validate / result`, `smoke` | `vX.Y.Z` / `v*` |
+| `skill-cli/cli` | `policy / policy`, `validate / result` | `vX.Y.Z` / `v*` |
 | `skill-cli/homebrew-tap` | `policy / policy`, `homebrew / homebrew` | None |
 | `skill-cli/skill-cli.github.io` | `policy / policy`, `site` | None |
 | `skill-cli/.github-private` | `policy / policy` | None |
@@ -109,12 +109,12 @@ The 2026-10-19 audits observed `Swift Package` and `validate-commit-messages`
 in core, `Swift CLI` and `validate-commit-messages` in both CLIs, and no check
 contexts in either tap. The table defines their replacement interfaces.
 
-Core and both CLIs use the shared package validation aggregate. CLIs retain
-member-owned `smoke` checks. Taps call the shared Homebrew job with caller ID
-`homebrew`, producing `homebrew / homebrew` for formula validation, installation
-and tests. Each public `.github` repository retains its `check` aggregate over
-its shared organization check; the workflow repository uses its own `result`
-aggregate. Websites keep `site`. Private dashboards require source policy.
+Core and both CLIs use the shared package validation aggregate. Taps call the
+shared Homebrew job with caller ID `homebrew`, producing `homebrew / homebrew`
+for formula validation, installation and tests. Each public `.github` repository
+retains its `check` aggregate over its shared organization check; the workflow
+repository uses its own `result` aggregate. Websites keep `site`. Private
+dashboards require source policy.
 Profiles, social previews and terminal SVGs are rendered and checked locally,
 then committed. CLI demo recording validation belongs to package validation.
 The [integration guide](docs/reference/workflow-integration.md) owns adoption
@@ -278,8 +278,7 @@ A pending adoption remains reported drift, never an implicit exemption.
       ],
       "required_checks": [
         "policy / policy",
-        "validate / result",
-        "smoke"
+        "validate / result"
       ],
       "release_tag_patterns": [
         "refs/tags/[0-9]*.[0-9]*.[0-9]*"
@@ -347,8 +346,7 @@ A pending adoption remains reported drift, never an implicit exemption.
       ],
       "required_checks": [
         "policy / policy",
-        "validate / result",
-        "smoke"
+        "validate / result"
       ],
       "release_tag_patterns": [
         "refs/tags/v*"
