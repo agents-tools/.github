@@ -16,4 +16,11 @@ concurrency:
 
 jobs:
   policy:
-    uses: ./.github/workflows/policy.yml
+    uses: agents-tools/github-workflows/.github/workflows/policy.yml@0000000000000000000000000000000000000000
+    with:
+      dependabot-exception: true
+      allow-terms: |
+        ChatGPT
+        Codex
+        Cursor
+        Claude

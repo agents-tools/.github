@@ -59,6 +59,14 @@
           "kind": "library",
           "title": "core",
           "about": "Swift libraries behind agents and skill: sources, locks, skills, instructions and watch."
+        },
+        {
+          "name": "github-workflows",
+          "outcome": "Shared GitHub Actions workflows and checks for agents-tools and skill-cli repositories.",
+          "icon": "https://raw.githubusercontent.com/agents-tools/.github/HEAD/profile/assets/icon.png",
+          "kind": "tool",
+          "title": "github-workflows",
+          "about": "Shared GitHub Actions workflows and checks for agents-tools and skill-cli repositories."
         }
       ]
     },

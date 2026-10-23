@@ -136,8 +136,8 @@ isometric slab of three bands, one per module, with the same star on its face.
 
 This file follows Google's [DESIGN.md format](https://github.com/google-labs-code/design.md)
 (`version: alpha`). Every token lives in the front matter; the sections below
-explain intent and cite token names instead of values. CI lints this file
-with the official `@google/design.md` parser and rejects any error or warning.
+explain intent and cite token names instead of values. Local lint uses the
+official `@google/design.md` parser and requires zero errors and warnings.
 `github-readme-design`'s toolchain renders terminal demos, social previews and
 the organization profiles from these tokens through the same parser. Change a
 token, then regenerate every output that reads it.
@@ -201,14 +201,15 @@ sentence wraps.
 
 The public profile (`profile/README.md`) and the member dashboard in the
 private `.github-private` repository are rendered by `github-readme-design`'s
-toolchain from `profile/catalog.json`. The umbrella mark is a
-`profile-header-icon` square on the public profile and a
+toolchain locally from `profile/catalog.json` and committed with their inputs.
+Member dashboards use DESIGN and catalog from an explicit standard commit.
+The umbrella mark is a `profile-header-icon` square on the public profile and a
 `profile-member-header-icon` square on the dashboard; repository icons use
 `profile-row-icon` and `profile-member-row-icon`.
 
 | Field | Source |
 | --- | --- |
-| Row icon | The logo in that repository's README header; the tap and the website use the agents mark |
+| Row icon | The logo in that repository's README header; github-workflows, the tap and the website use the agents mark |
 | Outcome | One plain-text sentence per repository in the catalog |
 
 ## Elevation & Depth
@@ -248,13 +249,14 @@ change, which renderers merge over the base.
 | Field | Source |
 | --- | --- |
 | `owner` | The organization login, `agents-tools` |
-| `title` | The catalog entry's `title`, the repository's README title: `agents` for cli, `core` for core, `homebrew-tap` for the tap; the organization `name` for `.github` |
+| `title` | The catalog entry's `title`, the repository's README title: `agents` for cli, `core` for core, `github-workflows` for shared workflows, `homebrew-tap` for the tap; the organization `name` for `.github` |
 | `about` | The catalog entry's `about`, the repository's About sentence and README tagline, complete and unchanged |
-| `icon` | The catalog entry's light-page icon: the agents app icon for cli, the tap and `.github`; the framework logo SVG for core |
+| `icon` | The catalog entry's light-page icon: the agents app icon for cli, github-workflows, the tap and `.github`; the framework logo SVG for core |
 
 Each repository commits its card at
-`.github/assets/social-preview/social-preview.png`, and its presentation check
-compares it with a fresh render from this file at the pinned standard.
+`.github/assets/social-preview/social-preview.png`. Render and check it locally
+with this file, the catalog, fonts and icon at the accepted standard revision.
+Commit the checked output with its inputs.
 
 ### Website
 

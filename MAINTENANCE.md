@@ -1,7 +1,8 @@
 # Maintenance
 
-`agents-tools/.github` owns the shared engineering standard and reusable
-workflows for the agents family. The declaration below covers the public
+`agents-tools/.github` owns the shared engineering rules and organization
+data for the agents family. [agents-tools/github-workflows](https://github.com/agents-tools/github-workflows)
+owns reusable workflows and their checkers. The declaration below covers
 repositories in `agents-tools` and the related `skill-cli` organization.
 `skill-cli/.github` adopts this standard by reference in its own reviewed
 change, retaining its own identity, metadata and repository instructions.
@@ -72,7 +73,8 @@ and any social card; catalog summaries may give additional context.
   `refs/tags/[0-9]*.[0-9]*.[0-9]*` covers unprefixed `X.Y.Z` tags. It is a
   GitHub fnmatch protection glob, not a SemVer validator; the member's release
   checklist validates the exact version. `skill-cli/cli` uses `refs/tags/v*`.
-  Both standards repositories publish signed SemVer tags `vX.Y.Z` under
+  Both standards repositories and `agents-tools/github-workflows` publish
+  signed SemVer tags `vX.Y.Z` under
   [VERSIONING.md](VERSIONING.md), after the consumer real-run gate and owner
   confirmation. Taps, the websites and the member profiles have no release tags
   of their own. Tag protection activation follows the declaration and gate
@@ -91,37 +93,33 @@ not assumed. Never add a nonexistent context to a live ruleset.
 | Repository | Required contexts after adoption | Release tag format / protection glob |
 | --- | --- | --- |
 | `agents-tools/.github` | `policy / policy`, `check` | `vX.Y.Z` / `v*` |
-| `agents-tools/core` | `policy / policy`, `validate / swift-package`, `presentation / presentation` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
-| `agents-tools/cli` | `policy / policy`, `validate / swift-package`, `smoke`, `presentation / presentation` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
-| `agents-tools/homebrew-tap` | `policy / policy`, `homebrew`, `presentation / presentation` | None |
+| `agents-tools/github-workflows` | `policy / policy`, `result` | `vX.Y.Z` / `v*` |
+| `agents-tools/core` | `policy / policy`, `validate / result` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
+| `agents-tools/cli` | `policy / policy`, `validate / result`, `smoke` | `X.Y.Z` / `[0-9]*.[0-9]*.[0-9]*` |
+| `agents-tools/homebrew-tap` | `policy / policy`, `homebrew / homebrew` | None |
 | `agents-tools/agents-tools.github.io` | `policy / policy`, `site` | None |
-| `agents-tools/.github-private` | `policy / policy`, `check / profile` | None |
+| `agents-tools/.github-private` | `policy / policy` | None |
 | `skill-cli/.github` | `policy / policy`, `check` | `vX.Y.Z` / `v*` |
-| `skill-cli/cli` | `policy / policy`, `validate / swift-package`, `smoke`, `presentation / presentation` | `vX.Y.Z` / `v*` |
-| `skill-cli/homebrew-tap` | `policy / policy`, `homebrew`, `presentation / presentation` | None |
+| `skill-cli/cli` | `policy / policy`, `validate / result`, `smoke` | `vX.Y.Z` / `v*` |
+| `skill-cli/homebrew-tap` | `policy / policy`, `homebrew / homebrew` | None |
 | `skill-cli/skill-cli.github.io` | `policy / policy`, `site` | None |
-| `skill-cli/.github-private` | `policy / policy`, `check / profile` | None |
+| `skill-cli/.github-private` | `policy / policy` | None |
 
 The 2026-10-19 audits observed `Swift Package` and `validate-commit-messages`
 in core, `Swift CLI` and `validate-commit-messages` in both CLIs, and no check
-contexts in either tap. The table defines their replacement interfaces. The
-CLIs retain executable smoke validation in a member-owned `smoke` job; taps
-supply a member-owned `homebrew` job for formula validation, installation and
-tests. Their commands belong in the members. `.github` uses `check` for its
-Python validation. Both CLIs also require `presentation / presentation` to
-re-record their terminal scripts against their freshly built executable and
-compare the recording, both SVGs and their social preview. Each organization
-pins the toolchain Action in its presentation workflow; DESIGN and fonts come
-from that standard at `job.workflow_sha`. Core and the taps have no terminal
-demo; they require `presentation / presentation` for their social previews.
-Each `.github-private` dashboard requires `check / profile`, its call of the
-standard's profile workflow. Both standards repositories check their own social preview and public
-profile through local reusable workflow calls. The tool path requires a real
-CLI consumer run at the candidate standard commit on its own build runner
-before adoption. The [integration
-guide](docs/reference/workflow-integration.md) defines caller names and
-the rollout gate. Shared Swift automation still needs a representative member
-run before rollout.
+contexts in either tap. The table defines their replacement interfaces.
+
+Core and both CLIs use the shared package validation aggregate. CLIs retain
+member-owned `smoke` checks. Taps call the shared Homebrew job with caller ID
+`homebrew`, producing `homebrew / homebrew` for formula validation, installation
+and tests. Each public `.github` repository retains its `check` aggregate over
+its shared organization check; the workflow repository uses its own `result`
+aggregate. Websites keep `site`. Private dashboards require source policy.
+Profiles, social previews and terminal SVGs are rendered and checked locally,
+then committed. CLI demo recording validation belongs to package validation.
+The [integration guide](docs/reference/workflow-integration.md) owns adoption
+policy; the shared repository documents workflow interfaces. Shared changes
+need a representative consumer run at the exact candidate before rollout.
 
 Each organization's private `.github-private` repository holds its member
 dashboard. It is declared with `"visibility": "private"` and follows the same
@@ -137,8 +135,8 @@ Any setting, metadata, ruleset or required-context change updates this
 declaration and its explanatory table in the **same PR** as the associated
 workflow or governance change. After review and a real run, the authorized
 maintainer applies the declared live change and records the readback in that
-PR. `scripts/check` reports differences without applying them. A pending
-adoption remains reported drift, never an implicit exemption.
+PR. The shared `organization.yml` reports differences without applying them.
+A pending adoption remains reported drift, never an implicit exemption.
 
 ### Declaration
 
@@ -233,6 +231,18 @@ adoption remains reported drift, never an implicit exemption.
         "refs/tags/v*"
       ]
     },
+    "agents-tools/github-workflows": {
+      "default_branch": "master",
+      "description": "Shared GitHub Actions workflows and checks for agents-tools and skill-cli repositories.",
+      "topics": [],
+      "required_checks": [
+        "policy / policy",
+        "result"
+      ],
+      "release_tag_patterns": [
+        "refs/tags/v*"
+      ]
+    },
     "agents-tools/core": {
       "default_branch": "master",
       "description": "Swift libraries behind agents and skill: sources, locks, skills, instructions and watch.",
@@ -245,8 +255,7 @@ adoption remains reported drift, never an implicit exemption.
       ],
       "required_checks": [
         "policy / policy",
-        "validate / swift-package",
-        "presentation / presentation"
+        "validate / result"
       ],
       "release_tag_patterns": [
         "refs/tags/[0-9]*.[0-9]*.[0-9]*"
@@ -269,9 +278,8 @@ adoption remains reported drift, never an implicit exemption.
       ],
       "required_checks": [
         "policy / policy",
-        "validate / swift-package",
-        "smoke",
-        "presentation / presentation"
+        "validate / result",
+        "smoke"
       ],
       "release_tag_patterns": [
         "refs/tags/[0-9]*.[0-9]*.[0-9]*"
@@ -286,8 +294,7 @@ adoption remains reported drift, never an implicit exemption.
       ],
       "required_checks": [
         "policy / policy",
-        "homebrew",
-        "presentation / presentation"
+        "homebrew / homebrew"
       ],
       "release_tag_patterns": []
     },
@@ -307,8 +314,7 @@ adoption remains reported drift, never an implicit exemption.
       "topics": [],
       "visibility": "private",
       "required_checks": [
-        "policy / policy",
-        "check / profile"
+        "policy / policy"
       ],
       "release_tag_patterns": [],
       "enforcement_gap": "Repository rulesets are unavailable for private repositories on the Free plan."
@@ -341,9 +347,8 @@ adoption remains reported drift, never an implicit exemption.
       ],
       "required_checks": [
         "policy / policy",
-        "validate / swift-package",
-        "smoke",
-        "presentation / presentation"
+        "validate / result",
+        "smoke"
       ],
       "release_tag_patterns": [
         "refs/tags/v*"
@@ -358,8 +363,7 @@ adoption remains reported drift, never an implicit exemption.
       ],
       "required_checks": [
         "policy / policy",
-        "homebrew",
-        "presentation / presentation"
+        "homebrew / homebrew"
       ],
       "release_tag_patterns": []
     },
@@ -379,8 +383,7 @@ adoption remains reported drift, never an implicit exemption.
       "topics": [],
       "visibility": "private",
       "required_checks": [
-        "policy / policy",
-        "check / profile"
+        "policy / policy"
       ],
       "release_tag_patterns": [],
       "enforcement_gap": "Repository rulesets are unavailable for private repositories on the Free plan."
@@ -409,19 +412,11 @@ Each member with Actions workflows configures `github-actions` updates weekly.
 Dependabot files are repository-local and are not inherited. Updates follow
 the same signed/reviewed change flow and preserve the release dependency
 contract. Pin every external action and reusable workflow to a full commit
-SHA, with a version comment for released actions; an unreleased toolchain
-commit is pinned by SHA alone. The committed
-`.github/workflows/policy.yml` owns its action pins and version comments;
-`scripts/sync-policy-workflow.py` reads and preserves them during regeneration.
-Its version comments contain only dot-separated ASCII decimal numbers with an
-optional `v` prefix, such as `# v1.2.3` or `# 1.2.3`.
-Dependabot pin-only updates pass the generated-workflow check without edits
-to the generator. Policy behavior remains owned by `scripts/check-policy.py`;
-changes to it require regeneration, and hand edits to the embedded policy or
-generated workflow structure fail the check.
-Consumers advance shared workflow pins through reviewed PRs after a
-representative run; a pin lag observation alone is not a failed required
-check. See the integration guide for pin comparison and updates.
+SHA, with a version comment for a release and no comment for an in-progress
+commit. `agents-tools/github-workflows` owns reusable workflow implementations,
+their checker tests and action pins. Consumers advance workflow pins through
+reviewed PRs after a representative run at the exact proposed commit. Pin lag
+alone is not a failed required check. See the integration guide for adoption.
 
 Core, both CLIs and both taps are MIT-licensed. Each ships its own LICENSE;
 GitHub does not inherit licenses. Preserve existing copyright and third-party
@@ -471,20 +466,22 @@ These are not unsigned-commit exceptions.
 
 ## Read-only verification
 
-Run `python3 scripts/check` using an authenticated `gh` session with read
-access to repository settings across both organizations. It compares merge
-settings, token defaults, full repository/inherited rulesets, private reporting,
-descriptions and topics for every declared member. All GitHub calls are GETs;
-it never applies a setting. `DRIFT` includes expected and observed values;
-`UNKNOWN` denotes an inaccessible endpoint or missing field. Exit 0 means
-observed conformance, 1 means drift/local validation failure, and 2 means an
-unknown observation (with any drift still printed).
+Use [agents-tools/github-workflows `organization.yml`](https://github.com/agents-tools/github-workflows#organization-checks)
+with the relevant organization's declaration repository and full commit SHA.
+Run each organization separately. Public mode compares active public,
+non-archived, non-fork catalog membership and About descriptions. Online mode
+also reads declared merge settings, token defaults, complete rulesets,
+private vulnerability reporting, descriptions and topics, using authenticated
+read access to the selected repositories. The shared repository documents
+local checker commands and token inputs.
 
-`--offline` validates local sources without network access. `--public` adds
-public catalog membership and repository About comparison but skips
-administrative settings; this is the
-read-only workflow-token CI mode. Neither mode claims live settings conformity.
-The settings check does not prove App activation, commit signatures throughout
+All GitHub calls are reads. `DRIFT` includes expected and observed values;
+`UNKNOWN` denotes an inaccessible endpoint or missing field. Exit 0 means
+observed conformance, 1 means drift or an enforcement gap, and 2 means an
+unknown observation. Public mode uses a read-only workflow token and does not
+establish administrative settings conformance. Report unavailable evidence.
+
+The settings check does not prove App activation, signatures throughout
 history, effective issue-template rendering or consumer installation; those
 remain explicit adoption/release verification steps.
 

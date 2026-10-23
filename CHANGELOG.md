@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Use agents-tools/github-workflows for shared workflows and checks; callers
+  adopt package aggregates and shared Homebrew validation. Organization
+  profiles and presentation assets are rendered and checked locally.
+- Add github-workflows to the organization catalog and settings declaration.
+
 - Declare `skill-cli/skill-cli.github.io`, the skill website, with the same settings and
   required contexts as the agents website.
 - VERSIONING's release timing no longer describes how other repositories
