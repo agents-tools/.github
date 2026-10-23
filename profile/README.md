@@ -24,6 +24,7 @@ agents skills list
 
 <table>
 <tr><td><img src="https://raw.githubusercontent.com/agents-tools/core/HEAD/.github/assets/logo/logo.svg" width="40" height="40" alt="core icon"></td><td><strong><a href="https://github.com/agents-tools/core">core</a></strong><br>Swift library behind agents and skill: sources, declaration, lock, cache, skills and instructions.</td></tr>
+<tr><td><img src="https://raw.githubusercontent.com/agents-tools/.github/HEAD/profile/assets/icon.png" width="40" height="40" alt="github-workflows icon"></td><td><strong><a href="https://github.com/agents-tools/github-workflows">github-workflows</a></strong><br>Shared GitHub Actions workflows and checks for agents-tools and skill-cli repositories.</td></tr>
 </table>
 
 <h2>Install</h2>

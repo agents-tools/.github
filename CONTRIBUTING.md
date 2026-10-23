@@ -13,6 +13,12 @@ for signing, validation, review and merging, and the
 [versioning standard](https://github.com/agents-tools/.github/blob/master/VERSIONING.md)
 when preparing a release.
 
+Shared workflow and checker changes belong in
+[agents-tools/github-workflows](https://github.com/agents-tools/github-workflows).
+Organization data and policy changes belong in the organization's `.github`
+repository. Generate presentation outputs locally and commit them with their
+inputs using that repository's README.
+
 ## Pull Requests
 
 - Keep each pull request to one logical change.

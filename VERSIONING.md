@@ -86,15 +86,10 @@ major's removals beforehand.
 For each release tag, verify that the version source at its commit matches the
 tag's version and that `CHANGELOG.md` at that commit has the matching section.
 
-Repository checks:
-
-```sh
-python3 -m unittest discover -s tests
-python3 scripts/check --offline
-python3 scripts/check
-actionlint
-git diff --check origin/master
-```
+Run the local DESIGN, profile and social-preview checks in
+[README.md](README.md#change-the-profile-and-design), `actionlint`, and
+`git diff --check origin/master`. Run organization checks through
+`agents-tools/github-workflows` and report drift or unknown observations.
 
 Use the local signing configuration and verify the signature and exact commit
 locally. Before publishing release assets, verify the remote annotated tag's
@@ -112,10 +107,11 @@ Homebrew taps**. Each releasing repository has its own version. A change
 releases only the affected dependency chain; versions need not match across
 repositories.
 
-Both `.github` standards release independently, starting at `v0.1.0`. They
-publish signed, annotated SemVer tags `vX.Y.Z` on the default branch once a
+Both `.github` standards and `agents-tools/github-workflows` release
+independently, starting at `v0.1.0`. They publish signed, annotated SemVer tags
+`vX.Y.Z` on the default branch once a
 change to a consumed interface or output is complete, as
-[When to release](#when-to-release) states. Create each standard tag only after
+[When to release](#when-to-release) states. Create each tag only after
 the
 [consumer real-run gate](docs/reference/workflow-integration.md#adopt-and-update-pins)
 passes and the owner confirms that tag. Consumers pin a release's full commit
@@ -127,6 +123,7 @@ is in progress, members pin its commits by SHA alone.
 | Repository | Version source | Release tag | Release owner/checklist |
 | --- | --- | --- | --- |
 | `agents-tools/.github` | Git tag | `vX.Y.Z` | This policy and the [consumer real-run gate](docs/reference/workflow-integration.md#adopt-and-update-pins) |
+| `agents-tools/github-workflows` | Git tag | `vX.Y.Z` | [Shared workflows](https://github.com/agents-tools/github-workflows) and the consumer real-run gate |
 | `agents-tools/core` | Git tag | `X.Y.Z` | [Core release checklist](https://github.com/agents-tools/core/blob/master/Documentation/Reference/Release.md) |
 | `agents-tools/cli` | `BuildInfo.version` in `Sources/CLI/EntryPoint.swift` | `X.Y.Z` | [agents release checklist](https://github.com/agents-tools/cli/blob/master/Documentation/Reference/Release.md) |
 | `skill-cli/.github` | Git tag | `vX.Y.Z` | [Standard README](https://github.com/skill-cli/.github/blob/master/README.md) and the [consumer real-run gate](docs/reference/workflow-integration.md#adopt-and-update-pins) |
@@ -135,8 +132,9 @@ is in progress, members pin its commits by SHA alone.
 | `skill-cli/homebrew-tap` | Upstream CLI version in each formula | None of its own | [skill tap](https://github.com/skill-cli/homebrew-tap#readme); formula validation in the skill checklist |
 
 Do not introduce a duplicate version declaration into core or a tap. Every
-releasing member (core, both CLIs and both `.github` standards) maintains
-`CHANGELOG.md` under the common changelog policy above.
+releasing member (core, both CLIs, both `.github` standards and
+`agents-tools/github-workflows`) maintains `CHANGELOG.md` under the common
+changelog policy above.
 
 ## Documented interfaces
 
@@ -148,8 +146,10 @@ The family's documented interfaces are:
 - Declared file formats and locations.
 - Supported toolchain and platform requirements, including requirements whose
   increase would exclude existing consumers.
-- For both `.github` standards, reusable workflow inputs, outputs and caller
-  context names, and the DESIGN token names renderers read.
+- For `agents-tools/github-workflows`, reusable workflow inputs, outputs,
+  configuration schemas and caller context names.
+- For both `.github` standards, declared organization data formats and the
+  DESIGN token names renderers read.
 
 A DESIGN value change that members absorb by regenerating is not breaking.
 Member checklists own the supported compatibility surface and exact version
