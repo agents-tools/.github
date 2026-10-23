@@ -155,6 +155,24 @@ A DESIGN value change that members absorb by regenerating is not breaking.
 Member checklists own the supported compatibility surface and exact version
 validation. Prerelease conventions remain member-owned.
 
+## Platforms and toolchains
+
+- Members compile and test with the latest stable Xcode available to the
+  shared CI, through one entry in the `compilers` list of
+  `.github/swift-package.json`. `swift-tools-version` equals that Xcode's Swift
+  version.
+- Libraries support the three most recent formally released major generations
+  of each platform they declare; standalone command-line tools support the two
+  most recent. Count actual releases, not version numbers.
+- Building against the latest SDK checks API availability for every supported
+  system at compile time. CI runs tests on its current macOS host, not on older
+  systems.
+- As of Xcode 26.6 the values are Swift 6.3, macOS 15 for `agents-tools/core`
+  and macOS 26 for both CLIs. Homebrew formulae declare the CLI's macOS floor.
+  Raising a floor is a breaking change under
+  [Documented interfaces](#documented-interfaces); existing releases keep their
+  original requirements.
+
 ## Dependency rules
 
 During development a CLI may follow core's development branch as its member
