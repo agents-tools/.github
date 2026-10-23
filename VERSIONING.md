@@ -161,14 +161,14 @@ validation. Prerelease conventions remain member-owned.
   shared CI, through one entry in the `compilers` list of
   `.github/swift-package.json`. `swift-tools-version` equals that Xcode's Swift
   version.
-- Libraries support the three most recent formally released major generations
-  of each platform they declare; standalone command-line tools support the two
-  most recent. Count actual releases, not version numbers.
+- Libraries and command-line tools support the three most recent formally
+  released major generations of each platform they declare. Count actual
+  releases, not version numbers.
 - Building against the latest SDK checks API availability for every supported
   system at compile time. CI runs tests on its current macOS host, not on older
   systems.
-- As of Xcode 26.6 the values are Swift 6.3, macOS 15 for `agents-tools/core`
-  and macOS 26 for both CLIs. Homebrew formulae declare the CLI's macOS floor.
+- As of Xcode 26.6 the values are Swift 6.3 and macOS 15. Homebrew formulae
+  declare the CLI's macOS floor.
   Raising a floor is a breaking change under
   [Documented interfaces](#documented-interfaces); existing releases keep their
   original requirements.
