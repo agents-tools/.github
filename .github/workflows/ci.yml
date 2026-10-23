@@ -19,8 +19,8 @@ jobs:
     uses: agents-tools/github-workflows/.github/workflows/organization.yml@0000000000000000000000000000000000000000
     with:
       organization: agents-tools
-      standard-repository: ${{ github.repository }}
-      standard-revision: ${{ github.sha }}
+      declaration-repository: ${{ github.repository }}
+      declaration-revision: ${{ github.sha }}
       mode: public
   check:
     needs: organization
